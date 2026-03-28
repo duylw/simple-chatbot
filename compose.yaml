@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    # Set up the default database, user, and password
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: fastapidb
+    # Map the container's Postgres port to your local machine
+    ports:
+      - "5432:5432"
+    # Mount the volume to persist data across container restarts
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+# Define the named volume
+volumes:
+  postgres_data:
