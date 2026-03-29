@@ -2,7 +2,9 @@ import uuid
 
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from models.chunk import Chunk
 from src.models.base import Base
+    
 
 class Video(Base):
     __tablename__ = "videos"
