@@ -30,3 +30,20 @@ async def get_chunk(
                 detail="Chunk not found"
             )
     return chunk
+
+@router.get("/video/{video_id}", response_model=list[ChunkResponse])
+async def get_chunks_by_video_id(
+    video_id: str,
+    from_timestamp: int = 0,
+    to_timestamp: int = 0,
+    chunk_service = Depends(get_chunk_service)
+):
+    # Placeholder implementation
+    chunks = await chunk_service.get_chunk_by_video_id(video_id, from_timestamp, to_timestamp)
+
+    if not chunks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="No chunks found for the given video ID and timestamp range"
+        )
+    return chunks

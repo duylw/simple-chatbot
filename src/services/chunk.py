@@ -15,3 +15,12 @@ class ChunkService:
     
     async def list_chunks(self, limit: int = 10, offset: int = 0) -> list[Chunk]:
         return await self.repository.list(limit, offset)
+    
+    async def get_chunk_by_video_id(self,
+                                    video_id: str,
+                                    from_timestamp: int = 0,
+                                    to_timestamp: int = 0) -> list[Chunk]:
+        target_uuid = uuid.UUID(video_id)
+
+        # Placeholder implementation - you would implement the actual logic in the repository
+        return await self.repository.get_by_video_id(target_uuid, from_timestamp, to_timestamp)
