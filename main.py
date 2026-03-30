@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     
     async with AsyncSession(engine) as session:
+        # Optionally seed the database with initial data if it's empty
         await seed_data_if_empty(session)
     
     yield

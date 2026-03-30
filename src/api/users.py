@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.database.session import get_db_session
+
 from src.schemas.user import UserCreate, UserResponse
-from src.services.user import UserService
+
+from src.dependencies import get_user_service, get_db_session
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -11,7 +12,7 @@ async def create_user(
     user_in: UserCreate, 
     db: AsyncSession = Depends(get_db_session)
 ):
-    service = UserService(db)
+    service = get_user_service(db)
 
     return await service.create_user(user_in)
 
@@ -20,7 +21,7 @@ async def get_user(
     user_id: int, 
     db: AsyncSession = Depends(get_db_session)
 ):
-    service = UserService(db)
+    service = get_user_service(db)
     user = await service.get_user(user_id)
 
     if user is None:
@@ -37,5 +38,5 @@ async def list_users(
     limit: int = 10,
     offset: int = 0
 ):
-    service = UserService(db)
+    service = get_user_service(db)
     return await service.list_users(limit=limit, offset=offset)

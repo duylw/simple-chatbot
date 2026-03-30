@@ -42,7 +42,7 @@ services:
       - "5433:5432"
     # Mount the volume to persist data across container restarts
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/dataW
 
   adminer:
     image: adminer
