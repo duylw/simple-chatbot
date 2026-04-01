@@ -13,9 +13,9 @@ def extract_sources_from_tool_messages(messages: List) -> List[Document]:
     
     for msg in messages:
         if isinstance(msg, ToolMessage) and hasattr(msg, "name"):
-            if msg.name == "hyrid_search":
-                sources = eval(msg.content.replace('\n', '\\n'), {"Document": Document})
-
+            if msg.name == "hybrid_search":
+                sources = eval(msg.content, {"Document": Document})
+    
     return sources
 
 
@@ -54,7 +54,6 @@ def format_context(documents: List[Document]) -> str:
     context = ""
 
     for i, res in enumerate(documents, 1):
-      print(res)
       context += f"##Document {i}\n"
       context += f"###Video: {res.metadata.get('video_name')}\n"
       context += f"###At Timestamp: {res.metadata.get('timestamp')}\n"

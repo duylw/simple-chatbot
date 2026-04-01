@@ -32,9 +32,9 @@ def create_retriever_tool(
         bm25_res =  []
 
         if vectordb_retriever:
-            semantic_res = await vectordb_retriever.ainvoke(query, k=top_k)
+            semantic_res = await vectordb_retriever.ainvoke(query, k=top_k*2)
         if bm25_retriever:
-            bm25_res = await bm25_retriever.ainvoke(query, k=top_k)
+            bm25_res = await bm25_retriever.ainvoke(query, k=top_k*2)
 
         rrf_scores = {}
 

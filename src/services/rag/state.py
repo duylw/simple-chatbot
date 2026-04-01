@@ -12,31 +12,30 @@ class QueryEvaluation(BaseModel):
     )
 
     reasoning: str = Field(
-        description="A brief analytical explanation justifying the relevance decision, highlighting specific academic keywords or themes identified in the query."
+        description="A short analytical explanation justifying the relevance decision, highlighting specific academic keywords or themes identified in the query, written in Vietnamese."
     )
 
     feedback: str = Field(
-        description="A polite, student-facing message providing guidance. If irrelevant, it explains the assistant's scope; if relevant, it confirms the intent to search the lecture materials. Must be in Vietnamese."
+        description="A short, polite, student-facing message providing guidance in Vietnamese. If irrelevant, it explains the assistant's scope; if relevant, it confirms the intent to search the lecture materials. Must be in Vietnamese."
     )
 
 class AnswerGrade(BaseModel):
     is_relevant: bool = Field(description="Is the answer relevant to the query?")
-    suggestion: str = Field(description="Suggestion for improving the answer")
-    reasoning: str = Field(description="Reasoning for the answer")
+    suggestion: str = Field(description="Short suggestion for improving the answer in Vietnamese")
+    reasoning: str = Field(description="Short reasoning for the answer in Vietnamese")
 
 
 class ThreadState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add] # Chat messages
     
     original_query: Optional[str]
-    rewritten_query: Optional[str]
-    user_query_grade: Optional[QueryEvaluation]
+    rewritten_query: Annotated[List[str], operator.add]
+    user_query_grade: Annotated[List[QueryEvaluation], operator.add]
 
     source: List[Document]
     answer: Optional[str]
-    answer_grade: Optional[AnswerGrade]
+    answer_grade: Annotated[List[AnswerGrade], operator.add]
     routing_decision: Optional[str]
 
-    routing_decision: Optional[str]
     n_iterations: int
     n_llm_calls: int
