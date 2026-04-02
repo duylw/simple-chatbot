@@ -35,6 +35,8 @@ class AgenticRagService:
         self.vectordb_retriever = vectordb_retriever
         self.graph_config = graph_config or GraphConfig()
 
+        self.graph = self._build_graph()
+
     def _build_graph(self):
         # Build the graph using the provided nodes and configuration
         logging.info("Building the agentic RAG graph!")
@@ -86,7 +88,9 @@ class AgenticRagService:
 
         workflow.add_edge("response", END)
 
+        logging.info("Compiling the graph...")
         completed_graph = workflow.compile()
+        logging.info("Graph compilation completed!")
 
         return completed_graph
 
@@ -99,10 +103,16 @@ class AgenticRagService:
         return await self._execute_graph(query, model)
 
     async def _execute_graph(self, query: str, model: Optional[str]) -> dict:
-        pass
+        logging.info("Executing graph!")
+        return await self.graph.ainvoke({"query": query, "model": model})
 
     def _extract_answer(self, result: dict) -> str:
-        pass
+        messages = result.get("messages", [])
+        if messages:
+            return "No answer generated"
+
+        last_message = messages[-1]
+        return last_message.content if hasattr(last_message, "content") else str(last_message)
 
     def _extract_sources(self, result: dict) -> list:
         pass
