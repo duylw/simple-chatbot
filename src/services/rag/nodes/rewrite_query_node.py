@@ -22,7 +22,7 @@ async def invoke_query_rewrite(state: ThreadState, runtime: Runtime[Context]) ->
     original_query = state.get("original_query") or state.get("messages")[0].content
     current_iteration = state.get("n_iterations", 0)
 
-    logger.info(f"Rewrite query for: {original_query[:50]}")
+    logger.info(f"Rewrite query for: {original_query[:50]}...")
 
     # If it is the first iteration
     if state.get("n_iterations", 0) == 0:
@@ -51,8 +51,8 @@ async def invoke_query_rewrite(state: ThreadState, runtime: Runtime[Context]) ->
     res = await llm.ainvoke(prompt)
     rewritten_query = res.content
 
-    logger.info(f"Query rewritten to: {rewritten_query[:50]}")
-    
+    logger.info(f"Query rewritten to: {rewritten_query[:50]}...")
+
     updates["messages"] = [HumanMessage(content=rewritten_query)]
     updates["rewritten_query"] = [rewritten_query]
     updates["n_llm_calls"] = state.get("n_llm_calls", 0) + 1

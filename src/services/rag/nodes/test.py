@@ -126,7 +126,7 @@ if __name__ == "__main__":
         )
         inital_state = {
             "messages": [
-                HumanMessage(content="giải thích cơ chế hoạt động của self-attention trong mô hình transformer?"),
+                HumanMessage(content="hãy tóm tắt các biến thể RNNs và các vấn đề mà chúng giải quyết được"),
             ],
             "n_iterations": 0,
             "n_llm_calls": 0

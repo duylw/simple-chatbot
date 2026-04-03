@@ -18,6 +18,6 @@ async def invoke_response(state: ThreadState, runtime: Runtime[Context]) -> Dict
 
     updates["messages"] = [AIMessage(content=state.get("answer", ""))]
 
-    logger.info(f"Final response generated of length {len(state.get('answer', ''))}")    
+    logger.info(f"Final response generated of length {len(state.get('answer', ''))}")
 
     return updates

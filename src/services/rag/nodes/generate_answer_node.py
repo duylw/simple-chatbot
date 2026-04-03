@@ -26,12 +26,16 @@ async def invoke_generate_answer(state: ThreadState, runtime: Runtime[Context]) 
 
     context = get_latest_context(state.get("messages", []))
     logger.info(f"Extracted context of length {len(context)} for answer generation")
-    source = extract_sources_from_tool_messages(state.get("messages", []))
-    logger.info(f"Extracted {len(source)} source documents for answer generation")
-    query = get_latest_query(state.get("messages", []))
-    logger.info(f"Latest user query: {query[:50]}")
 
-    norm_context = format_context(source)
+    sources = extract_sources_from_tool_messages(state.get("messages", []))
+    logger.info(f"Extracted {len(sources)} source documents for answer generation")
+
+    updates['sources'] = sources
+
+    query = get_latest_query(state.get("messages", []))
+    logger.info(f"Latest user query: {query[:50]}...")
+
+    norm_context = format_context(sources)
 
     prompt = answer_generation_prompt.format(query=query, context=norm_context)
 
@@ -45,6 +49,6 @@ async def invoke_generate_answer(state: ThreadState, runtime: Runtime[Context]) 
 
     updates["answer"] = res.content
     updates["n_llm_calls"] = state.get("n_llm_calls", 0) + 1
-    
+
     logger.info(f"Generated answer of length {len(res.content)}")
     return updates

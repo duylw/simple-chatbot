@@ -13,6 +13,7 @@ from typing import Dict, List
 import logging
 
 logger = logging.getLogger(__name__)
+
 async def invoke_out_of_scope_response(state: ThreadState, runtime: Runtime[Context]) -> Dict[str, List[AIMessage]]:
     """Generate a polite out-of-scope response when the query is not relevant."""
     logger.info("NODE: invoke_out_of_scope_response")

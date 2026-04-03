@@ -60,6 +60,7 @@ class AgenticRagService:
         workflow.add_node("query_rewrite", invoke_query_rewrite)
         workflow.add_node("get_relevant_documents", invoke_get_relevant_documents)
         workflow.add_node("search_tool", ToolNode(tools))
+        # workflow.add_node("rerank", invoke_rerank)
         workflow.add_node("generate_answer", invoke_generate_answer)
         workflow.add_node("grade_answer", invoke_grade_answer)
         workflow.add_node("response", invoke_response)
@@ -124,7 +125,7 @@ class AgenticRagService:
             "answer": None,
             "answer_grade": [],
             "routing_decision": None
-        }    
+        }
 
         logger.info("Initialze runtime context")
         runtime_context = Context(
@@ -158,6 +159,10 @@ class AgenticRagService:
             "guardrail_result": guardrail_result
         }
 
+    async def ask_streaming(self, query: str, model: Optional[str] = None) -> AsyncGenerator[str, None]:
+        # Main method to handle user query and return answer
+        pass
+
     def _extract_answer(self, result: dict) -> str:
         messages = result.get("messages", [])
 
@@ -172,3 +177,22 @@ class AgenticRagService:
 
     def _extract_reasoning(self, result: dict) -> str:
         return
+        
+    def get_graph_visualization(self) -> bytes:
+      """Get the LangGraph workflow visualization as PNG.
+      """
+      try:
+          logger.info("Generating graph visualization as PNG")
+          png_bytes = self.graph.get_graph().draw_mermaid_png()
+          logger.info(f"Generated PNG visualization ({len(png_bytes)} bytes)")
+          return png_bytes
+      except ImportError as e:
+          logger.error(f"Failed to generate visualization - missing dependencies: {e}")
+          logger.error("Install with: pip install pygraphviz or apt-get install graphviz")
+          raise ImportError(
+              "Graph visualization requires pygraphviz. "
+              "Install with: pip install pygraphviz (requires graphviz system package)"
+          ) from e
+      except Exception as e:
+          logger.error(f"Failed to generate graph visualization: {e}")
+          raise

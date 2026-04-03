@@ -27,7 +27,7 @@ class AnswerGrade(BaseModel):
 
 class ThreadState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add] # Chat messages
-    
+
     original_query: Optional[str]
     rewritten_query: Annotated[List[str], operator.add]
     user_query_grade: QueryEvaluation
