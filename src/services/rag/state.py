@@ -32,7 +32,7 @@ class ThreadState(TypedDict):
     rewritten_query: Annotated[List[str], operator.add]
     guardrail_result: GuardrailEvaluation
 
-    source: List[Document]
+    sources: List[Document]
     answer: Optional[str]
     answer_grade: Annotated[List[AnswerGrade], operator.add]
     routing_decision: Optional[str]

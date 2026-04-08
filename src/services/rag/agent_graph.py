@@ -83,13 +83,13 @@ class AgenticRagService:
             {"tools": "search_tool"}
         )
         workflow.add_edge("search_tool", "generate_answer")
-        workflow.add_edge("generate_answer", "grade_answer")
+        workflow.add_edge("generate_answer", "response")
 
-        workflow.add_conditional_edges(
-            "grade_answer",
-            lambda state: state.get("routing_decision", "response"),
-            {"response": "response", "rewrite_query": "query_rewrite"}
-        )
+        # workflow.add_conditional_edges(
+        #     "grade_answer",
+        #     lambda state: state.get("routing_decision", "response"),
+        #     {"response": "response", "rewrite_query": "query_rewrite"}
+        # )
 
         workflow.add_edge("response", END)
 
@@ -121,7 +121,7 @@ class AgenticRagService:
             "n_llm_calls": 0,
             "original_query": None,
             "rewritten_query": [],
-            "user_query_grade": [],
+            "guardrail_result": [],
             "source": [],
             "answer": None,
             "answer_grade": [],
@@ -148,7 +148,7 @@ class AgenticRagService:
         sources = self._extract_sources(result)
         n_iterations = result.get("n_iterations", 0) + 1
         rewritten_query = result.get("rewritten_query", [])[-1] if result.get("rewritten_query") else "No rewritten query"
-        guardrail_result = result.get("user_query_grade").reasoning if result.get("user_query_grade") else "No guardrail result" # a string
+        guardrail_result = result.get("guardrail_result").reasoning if result.get("guardrail_result") else "No guardrail result" # a string
 
         return {
             "query": query,
@@ -174,7 +174,7 @@ class AgenticRagService:
         return last_message.content if hasattr(last_message, "content") else str(last_message)
 
     def _extract_sources(self, result: dict) -> list:
-        return result.get("source", [])
+        return result.get("sources", [])
 
     def _extract_reasoning(self, result: dict) -> str:
         return

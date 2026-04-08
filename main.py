@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
 from src.api.users import router as users_router
 from src.api.videos import router as videos_router
 from src.api.chunks import router as chunks_router
@@ -73,6 +75,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+app.mount("/media", StaticFiles(directory="/app/media"), name="media")
 
 app.include_router(users_router)
 app.include_router(videos_router)

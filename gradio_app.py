@@ -1,17 +1,17 @@
 import logging
 import gradio as gr
 import httpx
+import urllib.parse
+import unicodedata
 
 logger = logging.getLogger(__name__)
 
-# Configuration
 API_BASE_URL = "http://localhost:8000"
 
-
-async def get_response(query: str) -> str:
-    """Fetch response from the Agentic RAG API"""
+async def get_response(query: str):
+    """Fetch response from the Agentic RAG API and extract video links"""
     if not query.strip():
-        return "Please enter a question."
+        return "Please enter a question.", []
 
     try:
         url = f"{API_BASE_URL}/agentic_ask/"
@@ -21,126 +21,128 @@ async def get_response(query: str) -> str:
             response = await client.post(url, params=params)
             
             if response.status_code != 200:
-                return f"**Error: API returned status {response.status_code}**\n\nDetails: {response.text}"
+                return f"**Error: API returned status {response.status_code}**\n\nDetails: {response.text}", []
 
             data = response.json()
             
             answer = data.get("answer", "No answer found.")
-            rewritten_query = data.get("rewritten_query", "")
             sources = data.get("sources", [])
-            n_iterations = data.get("n_iterations", 0)
-            execution_time = data.get("execution_time", 0.0)
-            guardrail = data.get("guardrail_result")
-
-            # Build the answer UI (Clean, text-based layout)
+            
+            # 1. Format the Markdown response
             formatted_response = answer
             
-            # --- Metadata ---
-            formatted_response += "\n\n<br>\n\n### Execution Details\n"
-            if rewritten_query and rewritten_query != query:
-                formatted_response += f"- **Rewritten Query:** {rewritten_query}\n"
-            formatted_response += f"- **Agent Iterations:** {n_iterations}\n"
-            formatted_response += f"- **Execution Time:** {execution_time:.2f}s\n"
+            # 2. Extract sources for the clickable table
+            video_data = [] # Will hold [Video Name, Timestamp, URL]
             
-            if guardrail:
-                formatted_response += f"- **Guardrails:** {guardrail}\n"
-
-            # --- Sources ---
             if sources:
-                formatted_response += "\n### Sources Used\n"
-                for i, doc in enumerate(sources, 1):
+                for doc in sources:
                     metadata = doc.get("metadata", {})
-                    source_name = metadata.get("source", metadata.get("video_name", f"Document {i}"))
-                    timestamp = metadata.get("timestamp")
-                    timestamp_str = f" (Timestamp: {timestamp})" if timestamp else ""
+                    # Adjust 'video_name' based on what your vector DB actually stores
+                    video_name = metadata.get("source", metadata.get("video_name", "Unknown Video"))
                     
-                    formatted_response += f"{i}. **{source_name}**{timestamp_str}\n"
+                    # Ensure filename ends with .mp4 if it doesn't already
+                    filename = video_name if video_name.endswith('.mp4') else f"{video_name}.mp4"
+                    
+                    # Normalize Unicode characters (crucial for Vietnamese accents)
+                    filename = unicodedata.normalize('NFC', filename)
+                    
+                    # Add #t=timestamp for jumping to the specific time
+                    timestamp = metadata.get("timestamp", 0)
+                    video_url = f"{API_BASE_URL}/media/videos/{filename}#t={timestamp}"
+                    
+                    # Format timestamp as MM:SS for display
+                    mins, secs = divmod(int(timestamp), 60)
+                    time_display = f"{mins:02d}:{secs:02d}"
+                    
+                    video_data.append([video_name, time_display, video_url])
 
-            return formatted_response
+            return formatted_response, video_data
 
-    except httpx.RequestError as e:
-        return f"Connection error: {str(e)}\n\nMake sure the API server is running at {API_BASE_URL}"
     except Exception as e:
-        return f"Unexpected error: {str(e)}"
+        return f"Unexpected error: {str(e)}", []
+
+
+def play_selected_video(evt: gr.SelectData, source_data):
+    """Handler for when a user clicks a row in the sources DataFrame"""
+    row_idx = evt.index[0]
+    selected_url = source_data.iloc[row_idx, 2]
+    
+    # Put the 'src' directly in the <video> tag instead of a <source> child tag
+    # This forces the browser player to reload when you click a different row
+    html_player = f'''
+    <video width="100%" controls autoplay src="{selected_url}">
+      Your browser does not support the video tag.
+    </video>
+    '''
+    return html_player
 
 
 def create_gradio_interface():
-    """Create and configure the Gradio interface"""
+    theme = gr.themes.Default(primary_hue="zinc", neutral_hue="slate")
+    
+    # Custom CSS to target the markdown response text
+    custom_css = """
+    .response-markdown {
+        font-size: 1.3rem !important;
+        line-height: 1.6 !important;
+    }
+    """
 
-    # Using a modern, typography-focused theme
-    theme = gr.themes.Default(
-        primary_hue="zinc",
-        neutral_hue="slate",
-        font=[gr.themes.GoogleFont("Inter"), "system-ui", "sans-serif"]
-    )
-
-    with gr.Blocks(title="Agentic RAG Assistant", theme=theme) as interface:
-        gr.Markdown(
-            """
-            # Agentic RAG Assistant
-            
-            Ask complex questions about your indexed documents. The agent will iteratively search, rewrite queries, and evaluate its answers.
-            """
-        )
+    with gr.Blocks(title="Agentic RAG Assistant", theme=theme, css=custom_css) as interface:
+        gr.Markdown("# Agentic RAG Assistant")
 
         with gr.Row():
-            with gr.Column(scale=4):
-                query_input = gr.Textbox(
-                    show_label=False,
-                    placeholder="Ask a question about your documents...", 
-                    lines=1, 
-                    max_lines=5,
-                    container=False
+            with gr.Column(scale=1):
+                # Request UI
+                query_input = gr.Textbox(placeholder="Ask a question...")
+                submit_btn = gr.Button("Search", variant="primary")
+                
+                # Response UI (apply the custom class here)
+                response_output = gr.Markdown(
+                    "_Awaiting your question..._", 
+                    elem_classes=["response-markdown"],
+                    latex_delimiters=[
+                        {"left": "$$", "right": "$$", "display": True},   # Block math
+                        {"left": "$", "right": "$", "display": False}     # Inline math (display: False means inline)
+                    ]
+                )
+                
+            with gr.Column(scale=1):
+                # Video Player UI
+                gr.Markdown("### Video Player")
+                video_player = gr.HTML()
+
+                # Interactive Sources Table
+                gr.Markdown("### Sources (Click row to play video)")
+                sources_df = gr.Dataframe(
+                    headers=["Video Name", "Timestamp", "Hidden_URL"], 
+                    datatype=["str", "str", "str"],
+                    interactive=False,
+                    wrap=True
                 )
 
-            with gr.Column(scale=1):
-                submit_btn = gr.Button("Search", variant="primary")
-
-        response_output = gr.Markdown(
-            value="_Awaiting your question..._", 
-            elem_classes=["response-markdown"]
-        )
-
-        gr.Examples(
-            examples=[
-                ["What is the main topic of the documents?"],
-                ["Can you summarize the key findings?"],
-            ],
-            inputs=[query_input],
-            label="Example queries"
-        )
-
-        # Handle submission
+        # Triggers
         submit_btn.click(
             fn=get_response,
             inputs=[query_input],
-            outputs=[response_output],
+            outputs=[response_output, sources_df],
         )
 
-        # Handle Enter key
         query_input.submit(
             fn=get_response,
             inputs=[query_input],
-            outputs=[response_output],
+            outputs=[response_output, sources_df],
+        )
+
+        # When a user clicks a row in the Dataframe, send the URL to the Video Player
+        sources_df.select(
+            fn=play_selected_video,
+            inputs=[sources_df],
+            outputs=[video_player]
         )
 
     return interface
 
-
-demo = create_gradio_interface()
-
-def main():
-    """Main entry point for the Gradio app"""
-    print("Starting Agentic RAG Gradio Interface...")
-    print(f"API Base URL: {API_BASE_URL}")
-
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=7861,
-        share=False,
-        show_error=True
-    )
-
-
 if __name__ == "__main__":
-    main()
+    demo = create_gradio_interface()
+    demo.launch(server_name="0.0.0.0", server_port=7861, share=False)
