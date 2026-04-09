@@ -1,3 +1,5 @@
+from urllib import response
+
 from src.services.rag.state import (
     AnswerGrade,
     ThreadState
@@ -12,10 +14,11 @@ from src.services.rag.nodes.utils import (
 
 from langgraph.runtime import Runtime
 from langchain_google_genai import ChatGoogleGenerativeAI
-from typing import Dict, List
+from typing import Dict, List, Literal
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 async def invoke_grade_answer(state: ThreadState, runtime: Runtime[Context]) -> Dict[str, List[AnswerGrade] | str | int]:
     """Grade the answer"""
@@ -23,21 +26,16 @@ async def invoke_grade_answer(state: ThreadState, runtime: Runtime[Context]) -> 
     updates = {}
 
     answer = state.get("answer", "")
-    query = get_latest_query(state.get("messages", []))
+    query = state.get("original_query") or get_latest_query(state.get("messages", []))
+
     prompt = answer_grade_prompt.format(query=query, generated_answer=answer)
-
-    logger.info(f"Grading answer: {answer[:50]}")
-
 
     llm = ChatGoogleGenerativeAI(
         model=runtime.context.llm_model,
         temperature=runtime.context.temperature
     ).with_structured_output(AnswerGrade)
 
-    logger.info("Invoking LLM for answer grading...")
     res = await llm.ainvoke(prompt)
-
-    logger.info(f"Grade result - Is relevant: {res.is_relevant}, Reasoning: {res.reasoning}")
 
     updates["answer_grade"] = [res]
 

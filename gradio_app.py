@@ -89,7 +89,7 @@ def create_gradio_interface():
     """
 
     with gr.Blocks(title="Agentic RAG Assistant", theme=theme, css=custom_css) as interface:
-        gr.Markdown("# Agentic RAG Assistant")
+        gr.Markdown("# RAG Assistant")
 
         with gr.Row():
             with gr.Column(scale=1):

@@ -10,14 +10,9 @@ from typing import Dict, List
 import logging
 
 logger = logging.getLogger(__name__)
-async def invoke_response(state: ThreadState, runtime: Runtime[Context]) -> Dict[str, List[AIMessage]]:
-    """Return the final response and clean up state"""
+
+async def invoke_response(state: ThreadState, runtime: Runtime[Context]) -> Dict:
     logger.info("NODE: invoke_response")
-
-    updates = {}
-
-    updates["messages"] = [AIMessage(content=state.get("answer", ""))]
-
-    logger.info(f"Final response generated of length {len(state.get('answer', ''))}")
-
-    return updates
+    return {
+        "messages": [AIMessage(content=state.get("answer", ""))]
+    }

@@ -109,20 +109,23 @@ if __name__ == "__main__":
             {"tools": "search_tool"}
         )
         workflow.add_edge("search_tool", "generate_answer")
-        workflow.add_edge("generate_answer", "grade_answer")
+        workflow.add_edge("generate_answer", "response")
 
-        workflow.add_conditional_edges(
-            "grade_answer",
-            lambda state: state.get("routing_decision", "response"),
-            {"response": "response", "rewrite_query": "query_rewrite"}
-        )
+        # workflow.add_conditional_edges(
+        #     "grade_answer",
+        #     lambda state: state.get("routing_decision", "response"),
+        #     {"response": "response", "rewrite_query": "query_rewrite"}
+        # )
 
         workflow.add_edge("response", END)
 
         agent = workflow.compile()
 
         context = Context(
-            n_iterations=2
+            n_iterations=2,
+            retriever_top_k=10,
+            reranker_top_k=10,
+            temperature=0.2,
         )
         inital_state = {
             "messages": [
