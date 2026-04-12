@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -45,9 +47,9 @@ async def lifespan(app: FastAPI):
     
     async with AsyncSession(engine) as session:
         # Optionally seed the database with initial data if it's empty
-        await seed_db_if_empty(session)
+        await asyncio.to_thread(seed_db_if_empty, session) # Async func
     
-    seed_vector_db_if_empty() # Synchonous
+    await asyncio.to_thread(seed_vector_db_if_empty) # Async func
 
     # Create and store the BM25 retriever in the app state for later use
     logging.info("Initializing BM25 retriever...")

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from src.database.session import async_session_maker, get_db_session
+from src.database.session import async_session_maker
 from src.services.user import UserService
 from src.services.video import VideoService
 from src.services.chunk import ChunkService

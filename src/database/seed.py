@@ -76,7 +76,7 @@ async def seed_db_if_empty(session: AsyncSession):
     logger.info("Database seeded successfully with CSV data.")
 
 
-def seed_vector_db_if_empty():
+async def seed_vector_db_if_empty():
     """
     Seeds the ChromaDB vector database from a pickle file if it is empty.
     """

@@ -61,9 +61,9 @@ class AgenticRagService:
         workflow.add_node("query_rewrite", invoke_query_rewrite)
         workflow.add_node("get_relevant_documents", invoke_get_relevant_documents)
         workflow.add_node("search_tool", ToolNode(tools))
-        # workflow.add_node("rerank", invoke_rerank)
+        workflow.add_node("rerank", invoke_rerank)
         workflow.add_node("generate_answer", invoke_generate_answer)
-        workflow.add_node("grade_answer", invoke_grade_answer)
+        # workflow.add_node("grade_answer", invoke_grade_answer)
         workflow.add_node("response", invoke_response)
 
         workflow.set_entry_point("query_guardrail")
@@ -82,7 +82,8 @@ class AgenticRagService:
             tools_condition,
             {"tools": "search_tool"}
         )
-        workflow.add_edge("search_tool", "generate_answer")
+        workflow.add_edge("search_tool", "rerank")
+        workflow.add_edge("rerank", "generate_answer")
         workflow.add_edge("generate_answer", "response")
 
         # workflow.add_conditional_edges(
@@ -121,8 +122,8 @@ class AgenticRagService:
             "n_llm_calls": 0,
             "original_query": None,
             "rewritten_query": [],
-            "guardrail_result": [],
-            "source": [],
+            "guardrail_result": None,
+            "sources": [],
             "answer": None,
             "answer_grade": [],
             "routing_decision": None
@@ -147,13 +148,13 @@ class AgenticRagService:
         answer = self._extract_answer(result)
         sources = self._extract_sources(result)
         n_iterations = result.get("n_iterations", 0) + 1
-        rewritten_query = result.get("rewritten_query", [])[-1] if result.get("rewritten_query") else "No rewritten query"
-        guardrail_result = result.get("guardrail_result").reasoning if result.get("guardrail_result") else "No guardrail result" # a string
+        rewritten_query = result.get("rewritten_query", [])[-1] if result.get("rewritten_query") else []
+        guardrail_result = result.get("guardrail_result").reasoning if result.get("guardrail_result") else ""
 
         return {
             "query": query,
             "rewritten_query": rewritten_query,
-            "answer": answer or "No answer generated",
+            "answer": answer,
             "sources": sources,
             "n_iterations": n_iterations,
             "execution_time": execution_time,
@@ -178,7 +179,7 @@ class AgenticRagService:
 
     def _extract_reasoning(self, result: dict) -> str:
         return
-        
+
     def get_graph_visualization(self) -> bytes:
       """Get the LangGraph workflow visualization as PNG.
       """

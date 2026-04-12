@@ -16,14 +16,3 @@ async_session_maker = async_sessionmaker(
     expire_on_commit=False,
     autoflush=False,
 )
-
-# FastAPI Dependency to use in endpoints
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
-        try:
-            yield session
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
