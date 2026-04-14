@@ -22,5 +22,6 @@ class VideoRepository:
     async def list(self, limit: int = 10, offset: int = 0) -> List[Video]:
         result = await self.session.execute(
             select(Video).limit(limit).offset(offset)
+            .order_by(Video.name.asc())
         )
         return result.scalars().all()

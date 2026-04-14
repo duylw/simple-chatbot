@@ -13,6 +13,10 @@ from langchain_core.vectorstores import VectorStoreRetriever
 
 from fastapi import Depends, HTTPException, Request
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         try:
@@ -24,6 +28,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 def get_user_service(dependency_session: AsyncSession = Depends(get_db_session)):
+    logger.info("Creating UserService with provided database session.")
     return UserService(dependency_session)
 
 def get_video_service(dependency_session: AsyncSession = Depends(get_db_session)):
@@ -63,3 +68,4 @@ def get_agentic_rag_service(request: Request) -> AgenticRagService:
     return rag_service
 
 AgenticRAGDep = Annotated[AgenticRagService, Depends(get_agentic_rag_service)]
+VideoServiceDep = Annotated[VideoService, Depends(get_video_service)]

@@ -8,10 +8,15 @@ import uuid
 class ChunkRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
-    
-    async def get_by_id(self, video_id: uuid.UUID) -> Chunk | None:
-        result = await self.session.get(Chunk, video_id)
-        return result
+        
+    async def get_by_id(self, video_id: uuid.UUID) -> List[Chunk]:
+        # Use select() instead of .get() to allow filtering and ordering
+        result = await self.session.execute(
+            select(Chunk)
+            .where(Chunk.video_id == video_id)
+            .order_by(Chunk.timestamp.asc())
+        )
+        return result.scalars().all()
     
     async def list(self,
                    limit: int = 10,

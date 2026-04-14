@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Dashboard - Videos & Chunks</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 900px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Video Section */
+        .video-section {
+            margin-bottom: 25px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            transition: all 0.3s ease;
+        }
+
+        .video-section:hover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+
+        .video-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        .video-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background-color: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .video-section.collapsed .video-toggle::after {
+            content: "▶";
+        }
+
+        .video-section:not(.collapsed) .video-toggle::after {
+            content: "▼";
+        }
+
+        .video-info {
+            flex: 1;
+        }
+
+        .video-name {
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .video-id {
+            color: #999;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .chunks-list {
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            max-height: 2000px;
+            opacity: 1;
+            overflow: hidden;
+        }
+
+        .video-section.collapsed .chunks-list {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .chunk-item {
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .chunk-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .chunk-item:hover {
+            background-color: #f0f0f0;
+            border-color: #667eea;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .chunk-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 10px;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .chunk-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .chunk-id {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            color: #999;
+            word-break: break-all;
+            padding: 4px 6px;
+            background-color: #f0f0f0;
+            border-radius: 3px;
+        }
+
+        .chunk-timestamp {
+            background-color: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .chunk-content {
+            background-color: #f9f9f9;
+            padding: 8px;
+            border-radius: 4px;
+            color: #333;
+            font-size: 13px;
+            line-height: 1.4;
+            word-break: break-word;
+            border-left: 3px solid #667eea;
+            margin-top: 8px;
+        }
+
+        .error-message {
+            background-color: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #c33;
+            margin-bottom: 10px;
+        }
+
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .card-body {
+                max-height: 600px;
+            }
+
+            .chunk-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Data Dashboard</h1>
+            <p class="subtitle">View your videos and their chunks</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-number" id="totalVideos">0</div>
+                <div class="stat-label">Total Videos</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="totalChunks">0</div>
+                <div class="stat-label">Total Chunks</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">📹 Videos & Chunks</div>
+            <div class="card-body" id="dataContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading videos and chunks...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.origin;
+        let allVideosData = [];
+
+        // Initialize dashboard
+        async function init() {
+            await loadAllData();
+        }
+
+        // Load all videos with their chunks
+        async function loadAllData() {
+            try {
+                const container = document.getElementById('dataContainer');
+                container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading videos and chunks...</div>';
+
+                // Fetch all videos
+                const videosResponse = await fetch(`${API_BASE_URL}/videos/?limit=100`);
+                if (!videosResponse.ok) throw new Error('Failed to load videos');
+                const videos = await videosResponse.json();
+
+                // Fetch chunks for each video
+                const videosWithChunks = await Promise.all(
+                    videos.map(async (video) => {
+                        try {
+                            const chunksResponse = await fetch(`${API_BASE_URL}/chunks/video/${video.id}`);
+                            const chunks = chunksResponse.ok ? await chunksResponse.json() : [];
+                            return { ...video, chunks };
+                        } catch (error) {
+                            console.error(`Failed to load chunks for video ${video.id}:`, error);
+                            return { ...video, chunks: [] };
+                        }
+                    })
+                );
+
+                allVideosData = videosWithChunks;
+                displayAllData(videosWithChunks);
+                updateStats(videosWithChunks);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('dataContainer').innerHTML = `
+                    <div class="error-message">
+                        <strong>Error:</strong> Failed to load data. Make sure the backend is running at ${API_BASE_URL}
+                    </div>
+                `;
+            }
+        }
+
+        // Display all videos with nested chunks
+        function displayAllData(videosWithChunks) {
+            const container = document.getElementById('dataContainer');
+
+            if (videosWithChunks.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No videos found</p></div>';
+                return;
+            }
+
+            const html = videosWithChunks.map(video => `
+                <div class="video-section collapsed" data-video-id="${video.id}">
+                    <div class="video-header" onclick="toggleVideoSection(event)">
+                        <div class="video-toggle"></div>
+                        <div class="video-info">
+                            <div class="video-name">🎬 ${escapeHtml(video.name)}</div>
+                            <div class="video-id">ID: ${video.id}</div>
+                        </div>
+                    </div>
+                    <div class="chunks-list">
+                        ${video.chunks.length > 0 
+                            ? video.chunks.map(chunk => `
+                                <div class="chunk-item">
+                                    <div class="chunk-row">
+                                        <div class="chunk-label">ID:</div>
+                                        <div class="chunk-id">${chunk.id}</div>
+                                        <span class="chunk-timestamp">⏱️ ${formatTimestamp(chunk.timestamp)}</span>
+                                    </div>
+                                    <div class="chunk-content">${escapeHtml(chunk.content)}</div>
+                                </div>
+                            `).join('')
+                            : '<div style="padding: 15px; text-align: center; color: #999;">No chunks for this video</div>'
+                        }
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        // Toggle video section expanded/collapsed
+        function toggleVideoSection(event) {
+            const videoSection = event.currentTarget.closest('.video-section');
+            videoSection.classList.toggle('collapsed');
+        }
+
+        // Update statistics
+        function updateStats(videosWithChunks) {
+            const totalChunks = videosWithChunks.reduce((sum, video) => sum + video.chunks.length, 0);
+            document.getElementById('totalVideos').textContent = videosWithChunks.length;
+            document.getElementById('totalChunks').textContent = totalChunks;
+        }
+
+        // Helper function to format timestamp
+        function formatTimestamp(timeValue) {
+            // Assuming your backend returns time in SECONDS. 
+            // If it returns milliseconds, revert this and the issue is elsewhere.
+            const seconds = Math.floor(Number(timeValue));
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Start the dashboard
+        init();
+    </script>
+</body>
+</html>

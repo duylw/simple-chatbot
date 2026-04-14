@@ -1,15 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, status
 
 from src.schemas.video import VideoResponse
-
-from src.dependencies import get_video_service, get_db_session
+from src.dependencies import VideoServiceDep
 
 router = APIRouter(prefix="/videos", tags=["Videos"])
     
 @router.get("/", response_model=list[VideoResponse])
 async def list_videos(
-    video_service = Depends(get_video_service),
+    video_service: VideoServiceDep,
     limit: int = 10,
     offset: int = 0
 ):
@@ -20,7 +18,7 @@ async def list_videos(
 @router.get("/{video_id}", response_model=VideoResponse)
 async def get_video(
     video_id: str,
-    video_service = Depends(get_video_service)
+    video_service: VideoServiceDep
 ):
     video = await video_service.get_video_by_id(video_id)
 

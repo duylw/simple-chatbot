@@ -30,6 +30,10 @@ services:
           path: ./main.py
           target: /app/main.py
 
+        - action: sync
+          path: ./public
+          target: /app/public
+
         # If you add new packages, tell Docker to rebuild the full image
         - action: rebuild
           path: ./pyproject.toml

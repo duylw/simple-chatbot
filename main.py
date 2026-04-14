@@ -17,7 +17,7 @@ from src.models.base import Base
 from src.database.seed import seed_db_if_empty, seed_vector_db_if_empty
 
 from src.services.rag.bm25 import make_bm25_retriever
-from src.services.rag.vectordb import make_vector_db, make_vector_db_retriever
+from src.services.rag.vectordb import make_vector_db_retriever
 from src.services.rag.factory import make_agentic_rag_service
 from src.core.config import get_settings
 
@@ -47,9 +47,9 @@ async def lifespan(app: FastAPI):
     
     async with AsyncSession(engine) as session:
         # Optionally seed the database with initial data if it's empty
-        await asyncio.to_thread(seed_db_if_empty, session) # Async func
-    
-    await asyncio.to_thread(seed_vector_db_if_empty) # Async func
+        await seed_db_if_empty(session)
+ 
+    await seed_vector_db_if_empty() # Async func
 
     # Create and store the BM25 retriever in the app state for later use
     logging.info("Initializing BM25 retriever...")
@@ -77,12 +77,14 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.mount("/media", StaticFiles(directory="/app/media"), name="media")
 
 app.include_router(users_router)
 app.include_router(videos_router)
 app.include_router(chunks_router)
 app.include_router(agentic_ask_router)
+
+app.mount("/media", StaticFiles(directory="/app/media"), name="media")
+app.mount("/", StaticFiles(directory="/app/public", html=True), name="public")
 
 app.add_middleware(
     CORSMiddleware,

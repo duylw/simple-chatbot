@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from src.schemas.agentic_ask import AgenticAskResponse
-from src.dependencies import get_agentic_rag_service, AgenticRAGDep
+from src.dependencies import AgenticRAGDep
 
 router = APIRouter(prefix="/agentic_ask", tags=["ask"])
 
