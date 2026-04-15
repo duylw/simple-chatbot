@@ -144,17 +144,19 @@ class AgenticRagService:
         )
         
         handler = CallbackHandler()
+        langfuse = get_client()
 
-        result = await self.graph.ainvoke(
-                            inital_state,
-                            context=runtime_context,
-                            config = {
-                                "callbacks": [handler],
-                                "metadata": {
-                                    "langfuse_session_id": str(uuid.uuid4()),
-                                },
-                            }
-                        )
+        with langfuse.start_as_current_observation(as_type="span", name="langchain-call"):
+            # Propagate session_id to all observations
+            with propagate_attributes(session_id=str(uuid.uuid4())):
+
+                result = await self.graph.ainvoke(
+                                    inital_state,
+                                    context=runtime_context,
+                                    config = {
+                                        "callbacks": [handler]
+                                    }
+                                )
 
         execution_time = time.time() - start_time
         logger.info(f"Graph execution completed in {execution_time:.2f}s")
