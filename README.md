@@ -1,58 +1,45 @@
-# FastAPI Database Project & Agentic RAG Engine
+# Đồ án CS431 - Các kỹ thuật học sâu và ứng dụng
 
-This project serves as a robust backend foundation focusing on modern AI infrastructure, establishing best practices for API design, clean code architecture, and complex application lifecycles by building the foundation for an LLM-assisted Agentic Chatbot.
+Dự án này là hệ thống Hỏi/Đáp (Q&A) nâng cao dựa trên kiến trúc RAG (Retrieval-Augmented Generation) và LangGraph, được xây dựng trên nền tảng FastAPI.
 
-## Architecture Highlights
+## Thành viên nhóm
 
-The codebase implements a strict layered **Repository Pattern** ensuring maximal separation of concerns and testability:
+1. **Lương Quang Duy** - [23520368] - [GitHub](https://github.com/duylw)
+2. **[Nguyễn Bá Long]** - [23520880] - [GitHub](https://github.com/NBasLongz)
+3. **[Dương Thái Ý Nhi]** - [23521106] - [GitHub](https://github.com/dtynhi)
 
-- **`src/api/`**: FastAPI route handlers directly utilizing robust strict Dependency Injection.
-- **`src/services/`**: Core business logic and advanced orchestration (e.g., LangGraph configurations and LLM routing).
-- **`src/repositories/`**: Complete encapsulation of SQLAlchemy 2.0 asynchronous calls.
-- **`src/models/` & `src/schemas/`**: Separation between database schemas (SQLAlchemy) and interface definitions (Pydantic V2).
-- **`src/database/`**: Configuration, lifecycle auto-seeding routines, and core database interactions.
-- **`src/dependencies.py`**: A unified container resolving application state and database sessions.
+## Giới thiệu dự án
 
-## Tech Stack
+Hệ thống được thiết kế để tìm kiếm, trích xuất thông tin tư liệu (text, video) thông qua AI tự động định tuyến. Hệ thống kết hợp các công nghệ:
+- **Service/API**: FastAPI, Uvicorn, Pydantic, SQLAlchemy, PostgreSQL (asyncpg).
+- **Deep Learning / AI**: LangChain, LangGraph.
+- **Lưu trữ & RAG**: VectorDB (Chroma/Elasticsearch), thuật toán tính toán từ khóa BM25.
+- **Giao diện & Đánh giá**: Gradio UI, Langfuse, RAGAS.
 
-- **Python 3.12+**
-- **FastAPI** for high-performance API routing (using the `lifespan` context API)
-- **SQLAlchemy 2.0+** (async) + **asyncpg** mapping
-- **PostgreSQL** as the relational database + **Chroma/VectorStores** for embeddings
-- **LangChain / LangGraph** for Agentic Rag workflow definitions
-- **Pydantic V2** for reliable object validation
-- **Docker & Docker Compose** for streamlined containerized development
-- **uv** for ultra-fast pip dependency management
+## Cấu trúc thư mục thuật
 
-## Getting Started
+- `src/api/`: Các router xử lý API endpoints.
+- `src/services/rag/`: Chứa các đồ thị tác vụ LangGraph, Agent xử lý truy vấn, xếp hạng, kiểm duyệt thông tin.
+- `src/models/`, `src/schemas/`: Cấu trúc dữ liệu Database và API theo kiến trúc phân tầng.
+- `scripts/`: Chứa mã chuẩn bị dữ liệu và kiểm định (Evaluating RAG).
+- `data/`: Dữ liệu đầu vào, kết hợp lưu trữ file text và thông tin mapping cho nội dung đa phương tiện.
 
-### Option 1: Full Docker Environment (Recommended)
+## Cài đặt và Khởi chạy
 
-This runs the entire stack inside Docker network bindings (API, Vector stores, and PostgreSQL database). Code synchronization leverages Docker's watch mechanism for immediate reloading upon save without constant image building.
+Dự án được khuyến nghị chạy bằng Docker Compose để đồng bộ môi trường.
 
-1. **Start the environment in watch mode:**
-   ```bash
-   docker compose watch```
+**Khởi chạy với Docker**:
+```sh
+docker compose up -d
+docker compose watch  # Hỗ trợ Hot-reload
+```
 
-2. **Access the API Docs:** Open [http://localhost:8000/docs](http://localhost:8000/docs) in your browser.
+**Khởi chạy tự thủ công (dev mode)**:
+Yêu cầu Python >= 3.12 và công cụ quản lý thư viện `uv`:
+```sh
+# Chạy server FastAPI
+fastapi run main.py # Hoặc uvicorn
+```
 
-### Option 2: Local Backend + Docker Database
-
-This runs the Python backend directly on your machine while keeping the database containerized.
-
-1. **Start only the database:**
-   ```bash
-   docker compose up db -d
-   ```
-
-2. **Install dependencies using uv:**
-   ```bash
-   uv sync
-   ```
-
-3. **Run the local development server:**
-   ```bash
-   uv run uvicorn main:app --reload
-   ```
-
-4. **Access the API Docs:** Open [http://localhost:8000/docs](http://localhost:8000/docs) in your browser.
+## Lưu ý
+Các thiết lập biến môi trường như API Keys của LLM/VectorDB, thông tin DataBase cần được cấu hình theo template tại thư mục gốc.
