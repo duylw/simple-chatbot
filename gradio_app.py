@@ -11,7 +11,7 @@ API_BASE_URL = "http://localhost:8000"
 async def get_response(query: str):
     """Fetch response from the Agentic RAG API and extract video links"""
     if not query.strip():
-        return "Please enter a question.", []
+        return "Please enter a question.", [], ""
 
     try:
         url = f"{API_BASE_URL}/agentic_ask/"
@@ -21,12 +21,16 @@ async def get_response(query: str):
             response = await client.post(url, params=params)
             
             if response.status_code != 200:
-                return f"**Error: API returned status {response.status_code}**\n\nDetails: {response.text}", []
+                return f"**Error: API returned status {response.status_code}**\n\nDetails: {response.text}", [], ""
 
             data = response.json()
             
             answer = data.get("answer", "No answer found.")
             sources = data.get("sources", [])
+            
+            n_llm_calls = data.get("n_llm_calls", 0)
+            guardrail_result = data.get("guardrail_result", "N/A")
+            stats_info = f"<small>**LLM Calls:** {n_llm_calls} &nbsp;&nbsp;|&nbsp;&nbsp; **Guardrail Reasoning:** {guardrail_result}</small>"
             
             # 1. Format the Markdown response
             formatted_response = answer
@@ -56,10 +60,10 @@ async def get_response(query: str):
                     
                     video_data.append([video_name, time_display, video_url])
 
-            return formatted_response, video_data
+            return formatted_response, video_data, stats_info
 
     except Exception as e:
-        return f"Unexpected error: {str(e)}", []
+        return f"Unexpected error: {str(e)}", [], ""
 
 
 def play_selected_video(evt: gr.SelectData, source_data):
@@ -86,6 +90,12 @@ def create_gradio_interface():
         font-size: 1.3rem !important;
         line-height: 1.6 !important;
     }
+    .stats-markdown {
+        font-size: 0.9rem !important;
+        color: #71717a !important;
+        margin-top: 5px !important;
+        margin-bottom: 5px !important;
+    }
     """
 
     with gr.Blocks(title="Agentic RAG Assistant", theme=theme, css=custom_css) as interface:
@@ -96,6 +106,9 @@ def create_gradio_interface():
                 # Request UI
                 query_input = gr.Textbox(placeholder="Ask a question...")
                 submit_btn = gr.Button("Search", variant="primary")
+                
+                # Stats UI
+                stats_output = gr.Markdown("", elem_classes=["stats-markdown"])
                 
                 # Response UI (apply the custom class here)
                 response_output = gr.Markdown(
@@ -125,13 +138,13 @@ def create_gradio_interface():
         submit_btn.click(
             fn=get_response,
             inputs=[query_input],
-            outputs=[response_output, sources_df],
+            outputs=[response_output, sources_df, stats_output],
         )
 
         query_input.submit(
             fn=get_response,
             inputs=[query_input],
-            outputs=[response_output, sources_df],
+            outputs=[response_output, sources_df, stats_output],
         )
 
         # When a user clicks a row in the Dataframe, send the URL to the Video Player

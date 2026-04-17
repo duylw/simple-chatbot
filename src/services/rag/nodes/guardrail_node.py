@@ -5,7 +5,7 @@ from src.services.rag.state import (
 )
 
 from src.services.rag.prompts import (
-    query_evaluation_prompt,
+    query_guardrail_prompt,
 )
 from src.services.rag.context import Context
 from src.services.rag.nodes.utils import (
@@ -33,7 +33,7 @@ async def invoke_query_guardrail(state: ThreadState, runtime: Runtime[Context]) 
         temperature=runtime.context.temperature
       ).with_structured_output(GuardrailEvaluation)
 
-    res = await llm.ainvoke(query_evaluation_prompt.format(query=query))
+    res = await llm.ainvoke(query_guardrail_prompt.format(query=query))
 
     return {
         "original_query": query,

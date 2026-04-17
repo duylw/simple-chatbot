@@ -9,6 +9,6 @@ class AgenticAskResponse(BaseModel):
     n_iterations: int
     execution_time: float
     guardrail_result: str | None
-
+    n_llm_calls: int
 
     model_config = ConfigDict(from_attributes=True)
