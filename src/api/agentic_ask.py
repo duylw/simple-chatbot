@@ -18,6 +18,7 @@ async def ask_question(question: str, rag_service: AgenticRAGDep) -> AgenticAskR
             answer=results.get("answer", "No answer found."),
             sources=results.get("sources", []),
             n_iterations=results.get("n_iterations", 0),
+            n_llm_calls=results.get("n_llm_calls", 0),
             execution_time=results.get("execution_time", 0.0),
             guardrail_result=results.get("guardrail_result")
         )

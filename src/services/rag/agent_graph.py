@@ -164,8 +164,9 @@ class AgenticRagService:
         # Extract last results
         answer = self._extract_answer(result)
         sources = self._extract_sources(result)
-        n_iterations = result.get("n_iterations", 0) + 1
-        rewritten_query = result.get("rewritten_query", [])[-1] if result.get("rewritten_query") else []
+        n_iterations = result.get("n_iterations", 0)
+        n_llm_calls = result.get("n_llm_calls", 0)
+        rewritten_query = result.get("rewritten_query", [])[-1] if result.get("rewritten_query") else ""
         guardrail_result = result.get("guardrail_result").reasoning if result.get("guardrail_result") else ""
 
         return {
@@ -174,6 +175,7 @@ class AgenticRagService:
             "answer": answer,
             "sources": sources,
             "n_iterations": n_iterations,
+            "n_llm_calls": n_llm_calls,
             "execution_time": execution_time,
             "guardrail_result": guardrail_result
         }

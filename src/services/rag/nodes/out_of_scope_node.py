@@ -17,13 +17,8 @@ logger = logging.getLogger(__name__)
 async def invoke_out_of_scope_response(state: ThreadState, runtime: Runtime[Context]) -> Dict:
     logger.info("NODE: out_of_scope")
     
-    query = state.get("original_query")
-    prompt = f"Explain politely in Vietnamese that '{query}' is out of scope. Vietnamese only."
-    
-    llm = ChatGoogleGenerativeAI(model=runtime.context.llm_model, temperature=runtime.context.temperature)
-    res = await llm.ainvoke(prompt)
+    guardrail_result = state.get("guardrail_result")
     
     return {
-        "messages": [AIMessage(content=res.content)],
-        "n_llm_calls": state.get("n_llm_calls", 0) + 1
+        "messages": [AIMessage(content=guardrail_result.feedback)],
     }
