@@ -149,7 +149,11 @@ app.include_router(videos_router)
 app.include_router(chunks_router)
 app.include_router(agentic_ask_router)
 
-app.mount("/media", StaticFiles(directory="/app/media"), name="media")
+# Mount media directory safely (supports both Docker /app/media and local data directory)
+import os
+media_dir = "/app/media" if os.path.exists("/app/media") else os.path.join(os.path.dirname(__file__), "data")
+os.makedirs(media_dir, exist_ok=True)
+app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
 app.add_middleware(
     CORSMiddleware,

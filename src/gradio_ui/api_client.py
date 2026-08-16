@@ -65,11 +65,11 @@ class BackendClient:
 
         url = f"{self.base_url}/agentic_ask/"
         headers = {"Authorization": f"Bearer {token}"}
-        params = {"question": question.strip()}
+        payload = {"question": question.strip()}
 
         try:
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-                response = await client.post(url, params=params, headers=headers)
+                response = await client.post(url, json=payload, headers=headers)
         except httpx.HTTPError as error:
             return AskResult(False, f"Question request failed: {error}")
 
