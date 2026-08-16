@@ -40,7 +40,8 @@ def create_retriever_tool(
 
         def add_results_to_rrf(results, weight: float):
             for rank, doc in enumerate(results):
-                doc_id = doc.page_content
+                meta = doc.metadata or {}
+                doc_id = f"{meta.get('video_name') or meta.get('video_id')}_{meta.get('timestamp')}_{doc.page_content[:60]}"
 
                 if doc_id not in rrf_scores:
                     rrf_scores[doc_id] = {"doc": doc, "score": 0.0}
