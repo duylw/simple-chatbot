@@ -66,7 +66,7 @@ class AgenticRagService:
         workflow.add_node("get_relevant_documents", invoke_get_relevant_documents)
         workflow.add_node("search_tool", ToolNode(tools))
         workflow.add_node("generate_answer", invoke_generate_answer)
-        # workflow.add_node("grade_answer", invoke_grade_answer)
+        workflow.add_node("grade_answer", invoke_grade_answer)
         workflow.add_node("response", invoke_response)
 
         workflow.set_entry_point("query_guardrail")
@@ -86,13 +86,13 @@ class AgenticRagService:
             {"tools": "search_tool"}
         )
         workflow.add_edge("search_tool", "generate_answer")
-        workflow.add_edge("generate_answer", "response")
+        workflow.add_edge("generate_answer", "grade_answer")
 
-        # workflow.add_conditional_edges(
-        #     "grade_answer",
-        #     lambda state: state.get("routing_decision", "response"),
-        #     {"response": "response", "rewrite_query": "query_rewrite"}
-        # )
+        workflow.add_conditional_edges(
+            "grade_answer",
+            lambda state: state.get("routing_decision", "response"),
+            {"response": "response", "rewrite_query": "query_rewrite"}
+        )
 
         workflow.add_edge("response", END)
 
@@ -198,6 +198,9 @@ class AgenticRagService:
             yield answer[start : start + chunk_size]
 
     def _extract_answer(self, result: dict) -> str:
+        if result.get("answer"):
+            return result["answer"]
+
         messages = result.get("messages", [])
 
         if not messages:

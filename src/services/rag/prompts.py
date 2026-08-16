@@ -35,26 +35,22 @@ query_rewrite_prompt = """### Role
 You are an Academic Teaching Assistant. Your task is to generate a "Hypothetical Document" in **Vietnamese** that mimics a segment of a lecture slide or transcript based on a student's query.
 
 ### Contextual Strategy (HyDE)
-Do not answer the student. Instead, write a formal 3-5 sentence paragraph in **Vietnamese** that describes the theoretical and technical essence of the topic. This text will be used for vector similarity search against lecture materials.
+Do not answer the student directly. Instead, write a formal 3-5 sentence paragraph in **Vietnamese** that describes the theoretical and technical essence of the topic, enriched with specialized academic keywords. This text will be used for vector similarity and keyword search against lecture materials.
 
 ### Guidelines
 1. **Language:** The output MUST be in **Vietnamese**.
-2. **Academic Tone:** Use formal language as if it were written in a textbook or spoken by a professor.
-3. **Keyword Expansion:** Include relevant English technical terms in parentheses immediately after their Vietnamese counterparts (e.g., Lan truyền ngược (Backpropagation), Hàm mất mát (Loss Function)).
-4. **CRITICAL - No Hallucination:** - If the student asks for "variants", "types", or "summaries" without naming them, do NOT invent specific names.
-   - Use technical descriptors instead (e.g., "Các kiến trúc cải tiến tập trung vào...", "Những phương pháp này tối ưu hóa quá trình...").
+2. **Academic Tone:** Use formal language as if it were written in a textbook or spoken by a professor in a deep learning lecture.
+3. **Keyword Expansion:** Include relevant English technical terms in parentheses immediately after their Vietnamese counterparts (e.g., Lan truyền ngược (Backpropagation), Hàm mất mát (Loss Function), Tự chú ý (Self-Attention)).
+4. **CRITICAL - No Hallucination:**
+   - If the student asks for "variants", "types", or "summaries" without naming them, use accurate academic descriptions (e.g., "Các kiến trúc cải tiến của mạng RNN gồm LSTM và GRU tập trung vào việc giải quyết triệt tiêu đạo hàm...").
 5. **Document Structure:**
    - Sentence 1: Definition/Context.
-   - Sentence 2-3: Core mechanism or components.
-   - Sentence 4: Significance within the field of study.
-
-### Output Constraints
-- Output ONLY the Vietnamese hypothetical text and keywords.
-- No introductory remarks or meta-talk.
+   - Sentence 2-3: Core mechanism, equations, or components.
+   - Sentence 4: Significance within deep learning.
 
 ---
 ### Input Data
-- **Original Student Query:** {query}
+- **Student Query:** {query}
 
 ### Hypothetical Vietnamese Lecture Content:
 """
@@ -93,5 +89,31 @@ Your goal is to answer the student's query by connecting the dots between **Slid
 ### Final Pedagogical Answer (Vietnamese):
 """
 
+answer_grade_prompt = """### Role
+You are an AI Academic Quality and Relevance Evaluator. Your sole responsibility is to evaluate whether a generated answer is relevant, accurate, informative, and adequately answers the student's question based on lecture materials.
 
-answer_grade_prompt = """"""
+### Evaluation Criteria
+
+#### 1. Relevant Answer (is_relevant = True)
+- The answer directly explains or addresses the concepts asked in the student query.
+- It contains concrete academic knowledge, definitions, formulas, or mechanisms.
+- It is NOT a rejection message.
+
+#### 2. Irrelevant / Insufficient Answer (is_relevant = False)
+- The answer states that no information was found (e.g., "Dựa trên nội dung bài giảng hiện có, tôi không tìm thấy thông tin...").
+- The answer is completely off-topic or fails to answer the main point of the query.
+- The answer is too vague, empty, or admits lack of knowledge.
+
+### Output Constraints
+- Your response must be a valid JSON object matching the `AnswerGrade` schema.
+- **is_relevant:** boolean (`True` or `False`).
+- **reasoning:** A short analytical explanation in **Vietnamese** justifying the evaluation.
+- **suggestion:** If `False`, provide 2-4 concrete technical keywords or alternative query suggestions in **Vietnamese/English** to help retrieve the correct slide/transcript in the next iteration. If `True`, leave as an empty string.
+
+---
+### Input Data
+- **Student Query:** {query}
+- **Generated Answer:** {generated_answer}
+
+### Evaluation Result (JSON):
+"""

@@ -18,7 +18,9 @@ async def invoke_out_of_scope_response(state: ThreadState, runtime: Runtime[Cont
     logger.info("NODE: out_of_scope")
     
     guardrail_result = state.get("guardrail_result")
+    feedback = guardrail_result.feedback if guardrail_result else "Câu hỏi của bạn nằm ngoài phạm vi học thuật của bài giảng."
     
     return {
-        "messages": [AIMessage(content=guardrail_result.feedback)],
+        "messages": [AIMessage(content=feedback)],
+        "answer": feedback
     }
