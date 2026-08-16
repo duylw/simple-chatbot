@@ -1,12 +1,9 @@
-
-from src.services.rag.state import (
-    ThreadState
-)
+from src.services.rag.state import ThreadState
 from src.services.rag.context import Context
 
 from langgraph.runtime import Runtime
 from langchain.messages import AIMessage
-from typing import Dict, List
+from typing import Dict
 import logging
 
 logger = logging.getLogger(__name__)

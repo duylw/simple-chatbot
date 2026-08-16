@@ -77,6 +77,6 @@ def create_retriever_tool(
         return results
 
     if use_hybrid:
-        return hybrid_search
+        return [hybrid_search]
 
-    return semantic_search, bm25_search
+    return [semantic_search, bm25_search]

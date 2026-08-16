@@ -1,5 +1,6 @@
 from langchain_chroma import Chroma
-from src.core.config import get_settings, Settings
+from langchain_core.vectorstores import VectorStoreRetriever
+from src.core.config import get_settings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 import logging
@@ -15,8 +16,8 @@ def make_vector_db() -> Chroma:
         embeddings = GoogleGenerativeAIEmbeddings(model=settings.EMBEDDING_MODEL)
 
         chroma_client = Chroma(
-            host="chromadb",
-            port="8000",
+            host=settings.CHROMA_HOST,
+            port=settings.CHROMA_PORT,
             embedding_function=embeddings
         )
         return chroma_client
@@ -24,7 +25,7 @@ def make_vector_db() -> Chroma:
         logger.error(f"Error creating Chroma vector database: {e}")
         raise
 
-def make_vector_db_retriever() -> Chroma:
+def make_vector_db_retriever() -> VectorStoreRetriever:
     """Factory function to create a Chroma retriever instance."""
     logger.info("Creating Chroma retriever instance...")
     try:

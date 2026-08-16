@@ -1,24 +1,20 @@
+from collections.abc import AsyncGenerator
 from typing import Annotated
+import logging
+import jwt
+
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession
+from langchain_community.retrievers import BM25Retriever
+from langchain_core.vectorstores import VectorStoreRetriever
 
 from src.database.session import async_session_maker
 from src.services.user import UserService
 from src.services.video import VideoService
 from src.services.chunk import ChunkService
 from src.services.rag.agent_graph import AgenticRagService
-
-from collections.abc import AsyncGenerator
-from sqlalchemy.ext.asyncio import AsyncSession
-from langchain_community.retrievers import BM25Retriever
-from langchain_core.vectorstores import VectorStoreRetriever
-
-from fastapi import Depends, HTTPException, Request
-
-import logging
-import jwt
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer
-from pydantic import ValidationError
-
 from src.core.security import ALGORITHM, SECRET_KEY
 from src.schemas.user import TokenData
 from src.models.user import User
@@ -60,9 +56,6 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
-
-    logger.info("Creating UserService with provided database session.")
-    return UserService(dependency_session)
 
 def get_video_service(dependency_session: AsyncSession = Depends(get_db_session)):
     return VideoService(dependency_session)

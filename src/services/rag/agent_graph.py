@@ -6,7 +6,6 @@ from .nodes import (
     invoke_out_of_scope_response,
     invoke_query_rewrite,
     invoke_get_relevant_documents,
-    invoke_rerank,
     invoke_generate_answer,
     invoke_grade_answer,
     invoke_response
@@ -49,7 +48,7 @@ class AgenticRagService:
         # Build the graph using the provided nodes and configuration
         logger.info("Building the agentic RAG graph!")
 
-        hybrid_search = create_retriever_tool(
+        tools = create_retriever_tool(
             vectordb_retriever=self.vectordb_retriever,
             bm25_retriever=self.bm25_retriever,
             top_k=self.graph_config.retriever_top_k,
@@ -57,7 +56,8 @@ class AgenticRagService:
             semantic_weight=self.graph_config.semantic_weight,
             bm25_weight=self.graph_config.bm25_weight
         )
-        tools = [hybrid_search]
+        if not isinstance(tools, list):
+            tools = [tools]
 
         workflow = StateGraph(ThreadState, context_schema=Context)
         workflow.add_node("query_guardrail", invoke_query_guardrail)
@@ -65,7 +65,6 @@ class AgenticRagService:
         workflow.add_node("query_rewrite", invoke_query_rewrite)
         workflow.add_node("get_relevant_documents", invoke_get_relevant_documents)
         workflow.add_node("search_tool", ToolNode(tools))
-        workflow.add_node("rerank", invoke_rerank)
         workflow.add_node("generate_answer", invoke_generate_answer)
         # workflow.add_node("grade_answer", invoke_grade_answer)
         workflow.add_node("response", invoke_response)
@@ -86,8 +85,7 @@ class AgenticRagService:
             tools_condition,
             {"tools": "search_tool"}
         )
-        workflow.add_edge("search_tool", "rerank")
-        workflow.add_edge("rerank", "generate_answer")
+        workflow.add_edge("search_tool", "generate_answer")
         workflow.add_edge("generate_answer", "response")
 
         # workflow.add_conditional_edges(
@@ -140,8 +138,6 @@ class AgenticRagService:
           model_provider = "google-genai",
           temperature = self.graph_config.temperature,
           retriever_top_k = self.graph_config.retriever_top_k,
-          reranker_top_k = self.graph_config.reranker_top_k,
-          reranker_url = self.graph_config.reranker_url,
           n_iterations = self.graph_config.n_iterations
         )
         

@@ -11,7 +11,5 @@ class Context:
     llm_model: str = "gemini-2.5-flash-lite"
     model_provider: str = "google-genai"
     temperature: float = 0.0
-    retriever_top_k: int = 20
-    reranker_top_k: int = 10
-    reranker_url: str = "http://localhost:8001"
+    retriever_top_k: int = 10
     n_iterations: int = 3

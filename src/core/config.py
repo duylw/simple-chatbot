@@ -1,3 +1,4 @@
+from functools import lru_cache
 import os
 from pathlib import Path
 from typing import List, Literal, Optional
@@ -5,13 +6,13 @@ from typing import List, Literal, Optional
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 ENV_FILE_PATH = PROJECT_ROOT / ".env"
 
 
 class BaseConfigSettings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=[".env", str(ENV_FILE_PATH)],
+        env_file=[str(ENV_FILE_PATH), ".env"],
         extra="ignore",
         frozen=True,
         env_nested_delimiter="__",
@@ -37,18 +38,14 @@ class Settings(BaseConfigSettings):
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     # ChromaDB connection settings match what we have in compose.yaml
-    CHROMA_HOST:str = "localhost"
-    CHROMA_PORT:str = "8000"
-    EMBEDDING_MODEL:str = "gemini-embedding-2-preview"
+    CHROMA_HOST: str = "localhost"
+    CHROMA_PORT: str = "8000"
+    EMBEDDING_MODEL: str = "gemini-embedding-2-preview"
 
-    # Retriever and Reranker settings
-    retriever_top_k: int = 20
-    reranker_top_k: int = 10
-    RERANKER_URL: str = "http://localhost:8001"
+    # Retriever settings
+    retriever_top_k: int = 10
 
-    # Langfuse
-    
-    
 
+@lru_cache
 def get_settings() -> Settings:
     return Settings()

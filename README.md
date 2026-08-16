@@ -41,4 +41,4 @@ docker compose watch  # Hỗ trợ Hot-reload
 
 ## Lưu ý
 - Các thiết lập biến môi trường như API Keys của LLM/VectorDB, thông tin DataBase cần được cấu hình theo template tại thư mục gốc.
-- Reranker Service chạy container sử dụng GPU (yêu cầu CUDA).
+- Hệ thống sử dụng Hybrid Search (BM25 + Dense Gemini Vector qua RRF) tối ưu và gọn nhẹ, không yêu cầu GPU rời.

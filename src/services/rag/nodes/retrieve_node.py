@@ -16,7 +16,7 @@ async def invoke_get_relevant_documents(state: ThreadState, runtime: Runtime[Con
     logger.info("NODE: invoke_get_relevant_documents")
     updates = {}
 
-    query = state.get("rewritten_query", [])[-1] if state.get("rewritten_query") else get_latest_query(state)
+    query = state.get("rewritten_query", [])[-1] if state.get("rewritten_query") else get_latest_query(state.get("messages", []))
 
     logger.info(f"Creating tool call with query: {query[:50]}...")
     # Create tool calls for retrieval.

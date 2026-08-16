@@ -87,7 +87,6 @@ async def lifespan(app: FastAPI):
             bm25_retriever,
             chroma_retriever,
             retriever_top_k=settings.retriever_top_k,
-            reranker_top_k=settings.reranker_top_k,
         )
     app.state.rag_service = rag_service
     logging.info("Initialized Agentic RAG service and stored in app state.")
@@ -112,7 +111,6 @@ async def health(request: Request):
     """
     from fastapi import status
     from fastapi.responses import JSONResponse
-    import httpx
     from sqlalchemy import text
 
     components: dict[str, str] = {}
@@ -133,18 +131,6 @@ async def health(request: Request):
     components["rag_service"]     = "ok" if getattr(request.app.state, "rag_service",      None) else "not initialised"
 
     if any(v != "ok" for k, v in components.items() if k in ("bm25_retriever", "chroma_retriever", "rag_service")):
-        all_healthy = False
-
-    # ── 3. Reranker inference service ────────────────────────────────────────
-    reranker_url = getattr(request.app.state, "settings", None)
-    reranker_url = reranker_url.RERANKER_URL if reranker_url else "http://localhost:8001"
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            resp = await client.get(f"{reranker_url}/health")
-            resp.raise_for_status()
-        components["reranker"] = "ok"
-    except Exception as exc:
-        components["reranker"] = f"error: {exc}"
         all_healthy = False
 
     # ── Response ─────────────────────────────────────────────────────────────

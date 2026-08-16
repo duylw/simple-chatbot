@@ -99,10 +99,11 @@ async def seed_vector_db_if_empty():
     Seeds the ChromaDB vector database from a pickle file if it is empty.
     """
     try:
-        # Note: Use 'chromadb' and port 8000 when running inside the Docker network
+        from src.core.config import get_settings
+        settings = get_settings()
         chroma_client = Chroma(
-            host="chromadb",
-            port="8000",
+            host=settings.CHROMA_HOST,
+            port=settings.CHROMA_PORT,
         )
         
         # 'langchain' is the default collection name used by langchain_chroma
