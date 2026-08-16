@@ -84,16 +84,6 @@ services:
         - action: rebuild
           path: ./uv.lock
 
-  frontend:
-    image: nginx:alpine
-    restart: always
-    ports:
-      - "3000:80"
-    volumes:
-      - ./public:/usr/share/nginx/html:ro
-    depends_on:
-      - backend
-
   db:
     image: postgres:16-alpine
     restart: always

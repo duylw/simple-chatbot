@@ -155,6 +155,11 @@ media_dir = "/app/media" if os.path.exists("/app/media") else os.path.join(os.pa
 os.makedirs(media_dir, exist_ok=True)
 app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
+# Mount Data Dashboard static files directly from FastAPI (available at /dashboard)
+public_dir = os.path.join(os.path.dirname(__file__), "public")
+if os.path.exists(public_dir):
+    app.mount("/dashboard", StaticFiles(directory=public_dir, html=True), name="dashboard")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync --only-group gradio --locked
+RUN uv sync --group gradio --no-dev --locked
 
 # Only copy files needed by the Gradio service
 COPY gradio_app.py .
