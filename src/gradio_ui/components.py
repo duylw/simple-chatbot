@@ -20,6 +20,7 @@ class GradioComponents:
     logout_btn: gr.Button
     auth_status: gr.Markdown
     auth_state: gr.State
+    model_selector: gr.Dropdown
     query_input: gr.Textbox
     submit_btn: gr.Button
     response_output: gr.Markdown
@@ -64,7 +65,24 @@ def build_interface_shell() -> tuple[gr.Blocks, GradioComponents]:
                         auth_state = gr.State({"access_token": None, "email": None})
 
                     with gr.Column(elem_classes=["card"]):
-                        gr.HTML('<div class="section-label"><span class="dot dot-purple"></span>Search</div>')
+                        gr.HTML('<div class="section-label"><span class="dot dot-purple"></span>Search & AI Model</div>')
+                        model_selector = gr.Dropdown(
+                            label="Chọn Mô hình AI (Multi-Provider)",
+                            choices=[
+                                ("[Google] Gemini 2.5 Flash Lite (Mặc định)", "gemini-2.5-flash-lite"),
+                                ("[Google] Gemini 2.5 Flash", "gemini-2.5-flash"),
+                                ("[Groq] Llama 3.3 70B Versatile (Siêu tốc)", "groq/llama-3.3-70b-versatile"),
+                                ("[Groq] DeepSeek R1 Distill 70B (Reasoning)", "groq/deepseek-r1-distill-llama-70b"),
+                                ("[Groq] Llama 3.1 8B Instant", "groq/llama-3.1-8b-instant"),
+                                ("[OpenRouter] DeepSeek R1 Full 671B (Free)", "openrouter/deepseek/deepseek-r1:free"),
+                                ("[OpenRouter] Meta Llama 3.3 70B (Free)", "openrouter/meta-llama/llama-3.3-70b-instruct:free"),
+                                ("[OpenRouter] Qwen 2.5 72B (Free)", "openrouter/qwen/qwen-2.5-72b-instruct:free"),
+                                ("[OpenAI] GPT-4o Mini", "openai/gpt-4o-mini"),
+                            ],
+                            value="gemini-2.5-flash-lite",
+                            interactive=True,
+                            show_label=True,
+                        )
                         query_input = gr.Textbox(
                             placeholder="Enter your question...",
                             elem_classes=["search-input"],
@@ -119,6 +137,7 @@ def build_interface_shell() -> tuple[gr.Blocks, GradioComponents]:
         logout_btn=logout_btn,
         auth_status=auth_status,
         auth_state=auth_state,
+        model_selector=model_selector,
         query_input=query_input,
         submit_btn=submit_btn,
         response_output=response_output,

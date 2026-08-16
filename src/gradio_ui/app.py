@@ -35,12 +35,12 @@ def bind_events(components: GradioComponents) -> None:
     )
     components.submit_btn.click(
         fn=handle_query,
-        inputs=[components.query_input, components.auth_state],
+        inputs=[components.query_input, components.auth_state, components.model_selector],
         outputs=[components.response_output, components.sources_df, components.status_output, components.sources_state],
     )
     components.query_input.submit(
         fn=handle_query,
-        inputs=[components.query_input, components.auth_state],
+        inputs=[components.query_input, components.auth_state, components.model_selector],
         outputs=[components.response_output, components.sources_df, components.status_output, components.sources_state],
     )
     components.sources_df.select(

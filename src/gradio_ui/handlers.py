@@ -61,9 +61,9 @@ async def handle_logout():
     return AUTH_DEFAULT_STATUS, {"access_token": None, "email": None}, ""
 
 
-async def handle_query(question: str, auth_state: dict | None):
+async def handle_query(question: str, auth_state: dict | None, model: str | None = None):
     token = (auth_state or {}).get("access_token")
-    result = await client.ask_question(question, token)
+    result = await client.ask_question(question, token, model=model)
 
     if not result.ok:
         empty_df = empty_sources_dataframe()

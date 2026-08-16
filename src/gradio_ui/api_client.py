@@ -56,7 +56,7 @@ class BackendClient:
 
         return LoginResult(True, f"Signed in as {email.strip()}", token=token, email=email.strip())
 
-    async def ask_question(self, question: str, token: str | None) -> AskResult:
+    async def ask_question(self, question: str, token: str | None, model: str | None = None) -> AskResult:
         if not token:
             return AskResult(False, "Please sign in first.")
 
@@ -65,7 +65,7 @@ class BackendClient:
 
         url = f"{self.base_url}/agentic_ask/"
         headers = {"Authorization": f"Bearer {token}"}
-        payload = {"question": question.strip()}
+        payload = {"question": question.strip(), "model": model}
 
         try:
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:

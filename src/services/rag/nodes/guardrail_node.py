@@ -14,7 +14,7 @@ from src.services.rag.nodes.utils import (
 
 from typing import Dict, List, Literal
 from langgraph.runtime import Runtime
-from langchain_google_genai import ChatGoogleGenerativeAI
+from src.services.rag.llm_factory import get_structured_chat_model
 import logging
 
 logger = logging.getLogger(__name__)
@@ -28,12 +28,29 @@ async def invoke_query_guardrail(state: ThreadState, runtime: Runtime[Context]) 
     logger.info("NODE: query_guardrail")
     query = get_latest_query(state.get("messages", []))
     
-    llm = ChatGoogleGenerativeAI(
-        model=runtime.context.llm_model,
-        temperature=runtime.context.temperature
-      ).with_structured_output(GuardrailEvaluation)
-
-    res = await llm.ainvoke(query_guardrail_prompt.format(query=query))
+    try:
+        llm = get_structured_chat_model(
+            schema=GuardrailEvaluation,
+            model_name=runtime.context.llm_model,
+            temperature=runtime.context.temperature
+        )
+        res = await llm.ainvoke(query_guardrail_prompt.format(query=query))
+    except Exception as e:
+        logger.warning(f"Guardrail structured call failed with '{runtime.context.llm_model}': {e}. Falling back to default Gemini.")
+        try:
+            fallback_llm = get_structured_chat_model(
+                schema=GuardrailEvaluation,
+                model_name="gemini-2.5-flash-lite",
+                temperature=0.0
+            )
+            res = await fallback_llm.ainvoke(query_guardrail_prompt.format(query=query))
+        except Exception as inner_e:
+            logger.error(f"Fallback guardrail also failed: {inner_e}. Defaulting to lecture-related.")
+            res = GuardrailEvaluation(
+                is_lecture_related=True,
+                reasoning="Tự động cho phép do lỗi phân loại guardrail",
+                feedback=""
+            )
 
     return {
         "original_query": query,

@@ -14,7 +14,7 @@ from src.services.rag.nodes.utils import (
 from src.services.rag.context import Context
 
 from langgraph.runtime import Runtime
-from langchain_google_genai import ChatGoogleGenerativeAI
+from src.services.rag.llm_factory import get_chat_model
 from langfuse.langchain import CallbackHandler
 
 from typing import Dict
@@ -40,7 +40,7 @@ async def invoke_generate_answer(state: ThreadState, runtime: Runtime[Context]) 
     formated_context = format_context(merged_sources)
     prompt = answer_generation_prompt.format(query=query, context=formated_context)
     
-    llm = ChatGoogleGenerativeAI(model=runtime.context.llm_model, temperature=runtime.context.temperature)
+    llm = get_chat_model(model_name=runtime.context.llm_model, temperature=runtime.context.temperature)
     res = await llm.ainvoke(prompt)
     
     return {
