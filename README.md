@@ -6,6 +6,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/LangGraph-Agentic%20RAG-FF8800?style=flat&logo=langchain&logoColor=white)
 ![LangChain](https://img.shields.io/badge/LangChain-Framework-1C3C3C?style=flat&logo=langchain&logoColor=white)
+![Langfuse](https://img.shields.io/badge/Langfuse-Observability-000000?style=flat&logo=opentelemetry&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?style=flat&logo=fastapi&logoColor=white)
 ![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector%20Store-FC521F?style=flat)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql&logoColor=white)
@@ -27,57 +28,67 @@
 
 This project delivers a production-grade multimodal Question & Answering (Q&A) system engineered to solve the challenge of information retrieval and precise timestamp localization across long-form academic video lectures.
 
-The system is built upon an **Agentic Self-RAG** workflow powered by **LangGraph**, combining **Hybrid Retrieval (Dense Semantic Embeddings + Sparse BM25 via Reciprocal Rank Fusion)**, **Temporal Grounding & Chunk Stitching** (merging adjacent video intervals into coherent lecture segments), and an extensible **Multi-Provider LLM Engine** supporting Google Gemini 3.5, Google Gemma 4, Groq LPU, OpenRouter, and OpenAI.
+The system is built upon an **Agentic Self-RAG** workflow powered by **LangGraph**, combining **Hybrid Retrieval (Dense Semantic Embeddings + Sparse BM25 via Reciprocal Rank Fusion)**, **Temporal Grounding & Chunk Stitching** (merging adjacent video intervals into coherent lecture segments), **Langfuse LLMOps Observability**, and an extensible **Multi-Provider LLM Engine** supporting Google Gemini 3.5, Google Gemma 4, Groq LPU, OpenRouter, and OpenAI.
 
 ### Key Engineering Highlights:
 - **Agentic LangGraph Workflow**: State machine with automated query guardrailing, retrieval, self-evaluation loop (Answer Grading), and iterative query rewriting with guided feedback.
 - **Temporal Grounding & Video Synchronization**: Automatically consolidates contiguous video chunks into clean time intervals (`MM:SS - MM:SS`) and dynamically seeks the embedded video player to exact lecture moments.
 - **Hybrid Retrieval with RRF**: Fuses high-density vector representations (`gemini-embedding-2-preview` on ChromaDB) and lexical search (`Rank-BM25`) using Reciprocal Rank Fusion without requiring dedicated GPU infrastructure.
 - **Unified Multi-Provider LLM Engine**: Native support for Google Gemini (3.5 Flash Lite, 3.5 Flash, Gemma 4 26B/31B), Groq Cloud (Llama 3.3 70B, DeepSeek R1 Distill), OpenRouter, and OpenAI GPT-4o with automated graceful fallback handling.
+- **Full-Stack LLMOps Tracing & Observability**: Integrated with Langfuse OpenTelemetry callbacks to monitor execution graphs, latency breakdown across individual nodes, token consumption, and cost tracking.
 - **Microservice Architecture**: Fully containerized backend (FastAPI, asyncpg, SQLAlchemy 2.0) and frontend (Gradio 6) communicating over asynchronous REST interfaces.
 - **Automated CI/CD & Testing**: Comprehensive unit and integration test suite (Pytest + Asyncio) integrated into a GitHub Actions CI pipeline with 100% deterministic test execution via mocking.
 
 ---
 
-## 3. System Architecture
+## 3. System Architecture & Engineering Scope
+
+### 3.1 End-to-End RAG Architecture (Offline vs. Online Pipelines)
+
+The overarching RAG design comprises two distinct lifecycles:
+1. **Offline Phase (Data Ingestion & Indexing)**: Multimodal processing of raw video lectures. Visual slide frames are extracted, deduplicated, and passed through OCR, while audio streams are transcribed via ASR. The resulting structured transcripts and slide contexts are merged into temporal lecture chunks and indexed into dual storage engines: **ChromaDB** (Dense Vector Embeddings) and **Rank-BM25** (Sparse Inverted Index).
+2. **Online Phase (Real-Time Agentic Inference — Core Implementation of this Repository)**: The live production service executing the interactive LangGraph state machine. It handles student queries, runs safety guardrails, executes adaptive query rewriting, coordinates hybrid RRF retrieval, synthesizes answers with contiguous temporal boundary merging, and performs pure LLM Self-RAG answer validation.
+
+<!-- End-to-End RAG Pipeline Diagram -->
+<div align="center">
+  <img src="img/CS431.png" alt="End-to-End RAG Pipeline Overview" width="90%">
+</div>
+
+---
+
+### 3.2 Software & Microservices Architecture (Online Deployment)
+
+The online inference system is architected as an asynchronous, decoupled microservices topology:
 
 ```
-[ User / Interactive Gradio Web UI ]
-                   │
-                   ▼ (HTTP / JWT Bearer Authentication)
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       FastAPI Application Gateway                       │
-│   (OAuth2 Security, SlowAPI Rate Limiting 10 req/min, Asynchronous I/O) │
-└────────────────────────────────────┬────────────────────────────────────┘
-                                     │
-                                     ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    LangGraph Agentic State Graph                        │
-│                                                                         │
-│   [ guardrail_node ] ──(Out of Scope)───> [ out_of_scope_node ]         │
-│          │ (Valid Query)                                                │
-│          ▼                                                              │
-│   [ retrieve_node ] ──> [ Hybrid Search: BM25 + ChromaDB (RRF) ]        │
-│          │                                                              │
-│          ▼                                                              │
-│   [ generate_answer ] ──> [ Temporal Chunk Merging & Synthesis ]        │
-│          │                                                              │
-│          ▼                                                              │
-│   [ grade_answer ] ──(Unsatisfactory & Iter < 3)──> [ rewrite_query ] ─┐│
-│          │                                                │            ││
-│          │ (Satisfactory or Max Iterations Reached)       └────────────┘│
-│          ▼                                                              │
-│   [ invoke_response ] ──> Formats Structured Agentic Response           │
-└────────────────────────────────────┬────────────────────────────────────┘
-                                     │
-         ┌───────────────────────────┴───────────────────────────┐
-         ▼                                                       ▼
-┌────────────────────────────────┐              ┌────────────────────────────────┐
-│      ChromaDB (Vector DB)      │              │      PostgreSQL 16 (Relational)│
-│  - Dense Semantic Embeddings   │              │  - User authentication & state │
-│  - Temporal chunk metadata     │              │  - Video & Lecture Chunk Index │
-└────────────────────────────────┘              └────────────────────────────────┘
+                      [ User / Gradio Web Client ]
+                                   │
+                                   ▼ (HTTP / JWT Bearer Auth)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      FastAPI Backend Service Gateway                        │
+│                                                                             │
+│   ┌────────────────────────┐         ┌──────────────────────────────────┐   │
+│   │ API Controllers & Auth │ ──────> │  LangGraph Agentic Orchestrator  │   │
+│   │ (Rate Limit, Security) │         │  (Self-RAG State Machine & LLMs) │   │
+│   └────────────────────────┘         └──────────────┬───────────────────┘   │
+└─────────────────────────────────────────────────────┼───────────────────────┘
+                                                      │
+                    ┌─────────────────────────────────┴─────────────────┐
+                    │ (Persistence Operations)                          │ (Async Tracing)
+                    ▼                                                   ▼
+        ┌───────────────────────┐                           ┌────────────────────────┐
+        │   Persistence Layer   │                           │  Langfuse LLMOps Cloud │
+        │  • ChromaDB (Vectors) │                           │  • Real-time Tracing   │
+        │  • PostgreSQL (Users) │                           │  • Token & Cost Logs   │
+        └───────────────────────┘                           └────────────────────────┘
 ```
+
+<!-- Software System Architecture Diagram Placeholder -->
+<!--
+<div align="center">
+  <img src="img/system_architecture.png" alt="Software Architecture Diagram" width="85%">
+</div>
+-->
 
 ---
 
@@ -154,10 +165,22 @@ cp .env.example .env
 ```
 Key configuration parameters in `.env`:
 ```env
+# LLM Provider API Keys (Google Gemini is primary)
 GOOGLE_API_KEY=your_google_gemini_api_key
-GROQ_API_KEY=your_groq_api_key          # (Optional) For ultra-fast Llama 3.3 / DeepSeek R1
-OPENROUTER_API_KEY=your_openrouter_key  # (Optional)
+GROQ_API_KEY=your_groq_api_key          # (Optional) Ultra-fast Llama 3.3 / DeepSeek R1
+OPENROUTER_API_KEY=your_openrouter_key  # (Optional) DeepSeek R1 Full / Qwen 2.5
+OPENAI_API_KEY=your_openai_api_key      # (Optional) GPT-4o / GPT-4o Mini
+
+# Langfuse LLMOps Observability & Tracing
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_BASE_URL=https://cloud.langfuse.com
+
+# Security & Vector Storage
 SECRET_KEY=your_secure_jwt_secret_key
+CHROMA_HOST=chromadb
+CHROMA_PORT=8000
+EMBEDDING_MODEL=gemini-embedding-2-preview
 ```
 
 ### 7.3 Launch via Docker Compose
