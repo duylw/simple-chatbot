@@ -23,14 +23,29 @@ def format_sources_dataframe(sources: list[dict] | None) -> pd.DataFrame:
 
     rows: list[list[str]] = []
     for doc in sources:
-        metadata = doc.get("metadata", {}) if isinstance(doc, dict) else {}
-        video_name = metadata.get("source", metadata.get("video_name", "Unknown Video"))
+        if isinstance(doc, dict):
+            metadata = doc.get("metadata", {})
+        elif hasattr(doc, "metadata"):
+            metadata = doc.metadata or {}
+        else:
+            metadata = {}
+
+        video_name = metadata.get("video_name") or metadata.get("source") or "Video Bài Giảng"
         filename = video_name if video_name.endswith(".mp4") else f"{video_name}.mp4"
         filename = unicodedata.normalize("NFC", filename)
-        timestamp = int(metadata.get("timestamp", 0) or 0)
+
+        # Get or format time range string (e.g. 02:15 - 03:00)
+        time_range = metadata.get("time_range")
+        if not time_range:
+            start_t = int(metadata.get("start_time", metadata.get("timestamp", 0)) or 0)
+            dur = int(metadata.get("duration", 0) or 0)
+            if dur > 0:
+                time_range = f"{start_t // 60:02d}:{start_t % 60:02d} - {(start_t + dur) // 60:02d}:{(start_t + dur) % 60:02d}"
+            else:
+                time_range = f"{start_t // 60:02d}:{start_t % 60:02d}"
+
         video_url = f"{PUBLIC_API_BASE_URL}/media/videos/{filename}"
-        minutes, seconds = divmod(timestamp, 60)
-        rows.append([video_name, f"{minutes:02d}:{seconds:02d}", video_url])
+        rows.append([video_name, time_range, video_url])
 
     return pd.DataFrame(rows, columns=SOURCE_COLUMNS)
 
@@ -77,7 +92,12 @@ def parse_timestamp_to_seconds(timestamp_text) -> int:
     if isinstance(timestamp_text, (int, float)):
         return max(0, int(timestamp_text))
 
-    parts = str(timestamp_text).strip().split(":")
+    # If it's a range like "02:15 - 03:00", take the starting point "02:15"
+    text = str(timestamp_text).strip()
+    if "-" in text:
+        text = text.split("-")[0].strip()
+
+    parts = text.split(":")
     try:
         values = [int(part) for part in parts]
     except ValueError:

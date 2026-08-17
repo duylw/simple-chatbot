@@ -17,19 +17,20 @@ def extract_sources_from_tool_messages(messages: List[Any]) -> List[Document]:
     for msg in messages:
         if isinstance(msg, ToolMessage):
             # 1. Check if tool message preserved raw Document objects in artifact
-            if hasattr(msg, "artifact") and isinstance(msg.artifact, list):
-                docs = []
-                for item in msg.artifact:
-                    if isinstance(item, Document):
-                        docs.append(item)
-                    elif isinstance(item, dict):
-                        docs.append(Document(
-                            page_content=item.get("page_content", ""),
-                            metadata=item.get("metadata", {})
-                        ))
-                if docs:
-                    sources = docs
-                    continue
+            if hasattr(msg, "artifact") and msg.artifact:
+                if isinstance(msg.artifact, list):
+                    docs = []
+                    for item in msg.artifact:
+                        if isinstance(item, Document):
+                            docs.append(item)
+                        elif isinstance(item, dict):
+                            docs.append(Document(
+                                page_content=item.get("page_content", ""),
+                                metadata=item.get("metadata", {})
+                            ))
+                    if docs:
+                        sources = docs
+                        continue
 
             # 2. Check if content is already a list
             if isinstance(msg.content, list):
@@ -58,6 +59,29 @@ def extract_sources_from_tool_messages(messages: List[Any]) -> List[Document]:
                                     page_content=item.get("page_content", ""),
                                     metadata=item.get("metadata", {})
                                 ))
+                        if docs:
+                            sources = docs
+                            continue
+                except Exception:
+                    pass
+
+            # 4. Safe AST parsing for Python string representations like [Document(...)]
+            if isinstance(msg.content, str) and "Document(" in msg.content:
+                try:
+                    import ast
+                    tree = ast.parse(msg.content.strip(), mode='eval')
+                    if isinstance(tree.body, ast.List):
+                        docs = []
+                        for elt in tree.body.elts:
+                            if isinstance(elt, ast.Call) and getattr(elt.func, 'id', '') == 'Document':
+                                page_content = ""
+                                metadata = {}
+                                for kw in elt.keywords:
+                                    if kw.arg == 'page_content':
+                                        page_content = ast.literal_eval(kw.value)
+                                    elif kw.arg == 'metadata':
+                                        metadata = ast.literal_eval(kw.value)
+                                docs.append(Document(page_content=page_content, metadata=metadata))
                         if docs:
                             sources = docs
                             continue

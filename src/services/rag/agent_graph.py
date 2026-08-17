@@ -210,7 +210,12 @@ class AgenticRagService:
         return last_message.content if hasattr(last_message, "content") else str(last_message)
 
     def _extract_sources(self, result: dict) -> list:
-        return result.get("sources", [])
+        sources = result.get("sources", [])
+        if not sources:
+            from src.services.rag.nodes.utils import extract_sources_from_tool_messages
+            messages = result.get("messages", [])
+            sources = extract_sources_from_tool_messages(messages)
+        return sources
 
     def _extract_reasoning(self, result: dict) -> str:
         return
