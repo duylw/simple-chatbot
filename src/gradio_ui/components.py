@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import gradio as gr
 
-from .config import APP_TITLE
+from .config import APP_TITLE, DEFAULT_MODEL, SUPPORTED_MODEL_CHOICES
 from .styles import AUTH_DEFAULT_STATUS, FOOTER_HTML, HEADER_HTML, QUERY_DEFAULT_STATUS, VIDEO_PLACEHOLDER
 from .utils import empty_sources_dataframe
 
@@ -66,20 +66,11 @@ def build_interface_shell() -> tuple[gr.Blocks, GradioComponents]:
 
                     with gr.Column(elem_classes=["card"]):
                         gr.HTML('<div class="section-label"><span class="dot dot-purple"></span>Search & AI Model</div>')
+                        model_choices = [(label, model_id) for model_id, label in SUPPORTED_MODEL_CHOICES]
                         model_selector = gr.Dropdown(
                             label="Chọn Mô hình AI (Multi-Provider)",
-                            choices=[
-                                ("[Google] Gemini 2.5 Flash Lite (Mặc định)", "gemini-2.5-flash-lite"),
-                                ("[Google] Gemini 2.5 Flash", "gemini-2.5-flash"),
-                                ("[Groq] Llama 3.3 70B Versatile (Siêu tốc)", "groq/llama-3.3-70b-versatile"),
-                                ("[Groq] DeepSeek R1 Distill 70B (Reasoning)", "groq/deepseek-r1-distill-llama-70b"),
-                                ("[Groq] Llama 3.1 8B Instant", "groq/llama-3.1-8b-instant"),
-                                ("[OpenRouter] DeepSeek R1 Full 671B (Free)", "openrouter/deepseek/deepseek-r1:free"),
-                                ("[OpenRouter] Meta Llama 3.3 70B (Free)", "openrouter/meta-llama/llama-3.3-70b-instruct:free"),
-                                ("[OpenRouter] Qwen 2.5 72B (Free)", "openrouter/qwen/qwen-2.5-72b-instruct:free"),
-                                ("[OpenAI] GPT-4o Mini", "openai/gpt-4o-mini"),
-                            ],
-                            value="gemini-2.5-flash-lite",
+                            choices=model_choices,
+                            value=DEFAULT_MODEL,
                             interactive=True,
                             show_label=True,
                         )

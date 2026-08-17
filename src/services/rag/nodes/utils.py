@@ -253,3 +253,25 @@ def trim_messages(messages: List, n: int = 10) -> List[AnyMessage]:
     :returns: Trimmed list of messages
     """
     return messages[-n:]
+
+
+def extract_text_content(content: Any) -> str:
+    """Safely extract plain text from LLM response content (handles str, list of dicts, thought signatures)."""
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        texts = []
+        for item in content:
+            if isinstance(item, str):
+                texts.append(item)
+            elif isinstance(item, dict):
+                if "text" in item:
+                    texts.append(str(item["text"]))
+            elif hasattr(item, "text"):
+                texts.append(str(getattr(item, "text")))
+            else:
+                texts.append(str(item))
+        return " ".join(texts).strip()
+    return str(content).strip()

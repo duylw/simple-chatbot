@@ -161,11 +161,18 @@ class AgenticRagService:
         logger.info(f"Graph execution completed in {execution_time:.2f}s")
 
         # Extract last results
-        answer = self._extract_answer(result)
+        from src.services.rag.nodes.utils import extract_text_content
+        answer = extract_text_content(self._extract_answer(result))
         sources = self._extract_sources(result)
         n_iterations = result.get("n_iterations", 0)
         n_llm_calls = result.get("n_llm_calls", 0)
-        rewritten_query = result.get("rewritten_query", [])[-1] if result.get("rewritten_query") else ""
+        
+        raw_rewritten = result.get("rewritten_query", [])
+        if raw_rewritten:
+            rewritten_query = extract_text_content(raw_rewritten[-1])
+        else:
+            rewritten_query = ""
+            
         guardrail_result = result.get("guardrail_result").reasoning if result.get("guardrail_result") else ""
 
         return {
@@ -198,8 +205,9 @@ class AgenticRagService:
             yield answer[start : start + chunk_size]
 
     def _extract_answer(self, result: dict) -> str:
+        from src.services.rag.nodes.utils import extract_text_content
         if result.get("answer"):
-            return result["answer"]
+            return extract_text_content(result["answer"])
 
         messages = result.get("messages", [])
 
@@ -207,7 +215,8 @@ class AgenticRagService:
             return "No answer generated"
 
         last_message = messages[-1]
-        return last_message.content if hasattr(last_message, "content") else str(last_message)
+        content = last_message.content if hasattr(last_message, "content") else str(last_message)
+        return extract_text_content(content)
 
     def _extract_sources(self, result: dict) -> list:
         sources = result.get("sources", [])

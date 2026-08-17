@@ -6,23 +6,24 @@ from langchain_core.language_models.chat_models import BaseChatModel
 logger = logging.getLogger(__name__)
 
 # Curated list of popular and free models
-DEFAULT_MODEL = "gemini-2.5-flash-lite"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 
 SUPPORTED_MODEL_CHOICES = [
-    # Google Gemini
-    ("gemini-2.5-flash-lite", "[Google] Gemini 2.5 Flash Lite (Mặc định - Nhanh)"),
-    ("gemini-2.5-flash", "[Google] Gemini 2.5 Flash (Cân bằng)"),
-    ("gemini-2.5-pro", "[Google] Gemini 2.5 Pro (Mạnh nhất)"),
+    # Google Gemini & Gemma
+    ("gemini-3.5-flash-lite", "[Google] Gemini 3.5 Flash Lite"),
+    ("gemini-3.5-flash", "[Google] Gemini 3.5 Flash"),
+    ("gemma-4-26b-a4b-it", "[Google] Gemma 4 26B"),
+    ("gemma-4-31b-it", "[Google] Gemma 4 31B"),
     
     # Groq (Ultra-Fast Inference - Free Tier)
-    ("groq/llama-3.3-70b-versatile", "[Groq] Llama 3.3 70B Versatile (Siêu tốc - Khuyên dùng)"),
-    ("groq/deepseek-r1-distill-llama-70b", "[Groq] DeepSeek R1 Distill 70B (Suy luận Logic)"),
-    ("groq/llama-3.1-8b-instant", "[Groq] Llama 3.1 8B Instant (Phản hồi tức thì)"),
+    ("groq/llama-3.3-70b-versatile", "[Groq] Llama 3.3 70B Versatile"),
+    ("groq/deepseek-r1-distill-llama-70b", "[Groq] DeepSeek R1 Distill 70B"),
+    ("groq/llama-3.1-8b-instant", "[Groq] Llama 3.1 8B Instant"),
     
     # OpenRouter (Free Tier Models)
-    ("openrouter/deepseek/deepseek-r1:free", "[OpenRouter] DeepSeek R1 Full 671B (Free)"),
-    ("openrouter/meta-llama/llama-3.3-70b-instruct:free", "[OpenRouter] Meta Llama 3.3 70B (Free)"),
-    ("openrouter/qwen/qwen-2.5-72b-instruct:free", "[OpenRouter] Qwen 2.5 72B Instruct (Free)"),
+    ("openrouter/deepseek/deepseek-r1:free", "[OpenRouter] DeepSeek R1 Full 671B"),
+    ("openrouter/meta-llama/llama-3.3-70b-instruct:free", "[OpenRouter] Meta Llama 3.3 70B"),
+    ("openrouter/qwen/qwen-2.5-72b-instruct:free", "[OpenRouter] Qwen 2.5 72B Instruct"),
     
     # OpenAI & Compatible
     ("openai/gpt-4o-mini", "[OpenAI] GPT-4o Mini"),
@@ -140,9 +141,14 @@ def get_chat_model(
 
 
 def _get_gemini_model(model_name: str, temperature: float) -> BaseChatModel:
-    """Internal helper to initialize Google Gemini chat model."""
+    """Internal helper to initialize Google Gemini / Gemma chat model."""
     from langchain_google_genai import ChatGoogleGenerativeAI
-    google_api_key = os.getenv("GOOGLE_API_KEY")
+    try:
+        import dotenv
+        dotenv.load_dotenv()
+    except ImportError:
+        pass
+    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     return ChatGoogleGenerativeAI(
         model=model_name,
         temperature=temperature,

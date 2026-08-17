@@ -5,7 +5,7 @@ class GraphConfig(BaseModel):
     """Configuration for the entire graph execution.
 
     """
-    llm_model: str = "gemini-2.5-flash-lite"
+    llm_model: str = "gemini-3.5-flash-lite"
     embedding_model: str = "gemini-embedding-2-preview"
     temperature: float = 0.0
     retriever_top_k: int = 10

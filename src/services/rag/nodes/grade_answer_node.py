@@ -40,7 +40,7 @@ async def invoke_grade_answer(state: ThreadState, runtime: Runtime[Context]) -> 
         try:
             fallback_llm = get_structured_chat_model(
                 schema=AnswerGrade,
-                model_name="gemini-2.5-flash-lite",
+                model_name="gemini-3.5-flash-lite",
                 temperature=0.0
             )
             res = await fallback_llm.ainvoke(prompt)

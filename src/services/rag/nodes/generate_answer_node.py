@@ -10,6 +10,7 @@ from src.services.rag.nodes.utils import (
     format_context,
     merge_temporal_chunks,
     extract_sources_from_tool_messages,
+    extract_text_content,
 )
 from src.services.rag.context import Context
 
@@ -42,9 +43,10 @@ async def invoke_generate_answer(state: ThreadState, runtime: Runtime[Context]) 
     
     llm = get_chat_model(model_name=runtime.context.llm_model, temperature=runtime.context.temperature)
     res = await llm.ainvoke(prompt)
+    clean_answer = extract_text_content(res.content)
     
     return {
         **updates,
-        "answer": res.content,
+        "answer": clean_answer,
         "n_llm_calls": state.get("n_llm_calls", 0) + 1
     }

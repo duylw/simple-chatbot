@@ -40,7 +40,7 @@ async def invoke_query_guardrail(state: ThreadState, runtime: Runtime[Context]) 
         try:
             fallback_llm = get_structured_chat_model(
                 schema=GuardrailEvaluation,
-                model_name="gemini-2.5-flash-lite",
+                model_name="gemini-3.5-flash-lite",
                 temperature=0.0
             )
             res = await fallback_llm.ainvoke(query_guardrail_prompt.format(query=query))

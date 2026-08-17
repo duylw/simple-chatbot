@@ -5,7 +5,7 @@ from src.services.rag.context import Context
 from src.services.rag.prompts import (
     query_rewrite_prompt,
 )
-from .utils import get_latest_query
+from .utils import get_latest_query, extract_text_content
 
 from langgraph.runtime import Runtime
 from src.services.rag.llm_factory import get_chat_model
@@ -33,8 +33,9 @@ async def invoke_query_rewrite(state: ThreadState, runtime: Runtime[Context]) ->
     
     llm = get_chat_model(model_name=runtime.context.llm_model, temperature=runtime.context.temperature)
     res = await llm.ainvoke(prompt)
+    clean_query = extract_text_content(res.content)
     return {
-        "messages": [HumanMessage(content=res.content)],
-        "rewritten_query": [res.content],
+        "messages": [HumanMessage(content=clean_query)],
+        "rewritten_query": [clean_query],
         "n_llm_calls": state.get("n_llm_calls", 0) + 1
     }
