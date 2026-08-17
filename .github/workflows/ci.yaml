@@ -3,8 +3,24 @@ name: CI Pipeline
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - "**.md"
+      - "plans/**"
+      - "data/**"
+      - "docs/**"
+      - ".gitignore"
+      - "public/**"
+      - "scripts/**"
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - "**.md"
+      - "plans/**"
+      - "data/**"
+      - "docs/**"
+      - ".gitignore"
+      - "public/**"
+      - "scripts/**"
 
 jobs:
   test:
