@@ -17,3 +17,9 @@ models/
 
 # Environment variables file
 .env
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
