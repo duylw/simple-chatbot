@@ -3,6 +3,7 @@
 > **Topic:** Intelligent Temporal-Grounded Video Lecture Q&A System via Agentic Self-RAG Architecture
 
 [![CI Pipeline](https://github.com/duylw/temporal-rag-qa-system/actions/workflows/ci.yaml/badge.svg)](https://github.com/duylw/temporal-rag-qa-system/actions/workflows/ci.yaml)
+[![YouTube Demo](https://img.shields.io/badge/Demo-YouTube%20Video-FF0000?style=flat&logo=youtube&logoColor=white)](https://youtu.be/9oUEUA-QYAI)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/LangGraph-Agentic%20RAG-FF8800?style=flat&logo=langchain&logoColor=white)
 ![LangChain](https://img.shields.io/badge/LangChain-Framework-1C3C3C?style=flat&logo=langchain&logoColor=white)
@@ -41,9 +42,22 @@ The system is built upon an **Agentic Self-RAG** workflow powered by **LangGraph
 
 ---
 
-## 3. System Architecture & Engineering Scope
+## 3. Video Demonstration
 
-### 3.1 End-to-End RAG Architecture (Offline vs. Online Pipelines)
+A complete end-to-end demonstration of the system—showcasing real-time query answering, dynamic timestamp seeking, LangGraph Self-RAG reflection loops, and Langfuse tracing—is available on YouTube:
+
+<div align="center">
+  <a href="https://youtu.be/9oUEUA-QYAI" target="_blank">
+    <img src="https://img.youtube.com/vi/9oUEUA-QYAI/maxresdefault.jpg" alt="Video Demo Walkthrough" width="85%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+  </a>
+  <p><em>Click the banner above or visit <a href="https://youtu.be/9oUEUA-QYAI">https://youtu.be/9oUEUA-QYAI</a> to watch the full system demonstration.</em></p>
+</div>
+
+---
+
+## 4. System Architecture & Engineering Scope
+
+### 4.1 End-to-End RAG Architecture (Offline vs. Online Pipelines)
 
 The overarching RAG design comprises two distinct lifecycles:
 1. **Offline Phase (Data Ingestion & Indexing)**: Multimodal processing of raw video lectures. Visual slide frames are extracted, deduplicated, and passed through OCR, while audio streams are transcribed via ASR. The resulting structured transcripts and slide contexts are merged into temporal lecture chunks and indexed into dual storage engines: **ChromaDB** (Dense Vector Embeddings) and **Rank-BM25** (Sparse Inverted Index).
@@ -56,7 +70,7 @@ The overarching RAG design comprises two distinct lifecycles:
 
 ---
 
-### 3.2 Software & Microservices Architecture (Online Deployment)
+### 4.2 Software & Microservices Architecture (Online Deployment)
 
 The online inference system is architected as an asynchronous, decoupled microservices topology:
 
@@ -92,7 +106,7 @@ The online inference system is architected as an asynchronous, decoupled microse
 
 ---
 
-## 4. Technology Stack
+## 5. Technology Stack
 
 | Layer / Component | Technologies | Purpose |
 | :--- | :--- | :--- |
@@ -109,7 +123,7 @@ The online inference system is architected as an asynchronous, decoupled microse
 
 ---
 
-## 5. Project Directory Structure
+## 6. Project Directory Structure
 
 ```
 temporal-rag-qa-system/
@@ -142,7 +156,7 @@ temporal-rag-qa-system/
 
 ---
 
-## 6. Data Confidentiality Statement
+## 7. Data Confidentiality Statement
 
 > **Notice Regarding Dataset Assets:**
 > The original high-resolution lecture video files (`.mp4`) are proprietary course materials and are **kept confidential (omitted from this public repository)**.
@@ -152,13 +166,13 @@ temporal-rag-qa-system/
 
 ---
 
-## 7. Installation & Quickstart Guide
+## 8. Installation & Quickstart Guide
 
-### 7.1 Prerequisites
+### 8.1 Prerequisites
 - **Docker** and **Docker Compose** (Recommended for seamless containerized execution).
 - Alternatively, **Python 3.12+** and **Astral UV** package manager for local development.
 
-### 7.2 Environment Configuration
+### 8.2 Environment Configuration
 Copy the environment template and provide the required API credentials:
 ```bash
 cp .env.example .env
@@ -183,7 +197,7 @@ CHROMA_PORT=8000
 EMBEDDING_MODEL=gemini-embedding-2-preview
 ```
 
-### 7.3 Launch via Docker Compose
+### 8.3 Launch via Docker Compose
 Deploy all services in detached mode with a single command:
 ```bash
 docker compose up -d --build
@@ -197,7 +211,7 @@ Once started, access the respective services:
 
 ---
 
-## 8. Automated Testing & CI Pipeline
+## 9. Automated Testing & CI Pipeline
 
 The project enforces strict software engineering standards with isolated, deterministic unit and integration test coverage. All external LLM calls are mocked during testing to avoid API quota consumption.
 
@@ -217,5 +231,5 @@ uv run pytest tests/ -v --cov=src --cov-report=term-missing
 
 ---
 
-## 9. Academic Affiliation & License
+## 10. Academic Affiliation & License
 This project was developed for academic and research purposes as part of the course **CS431 - Deep Learning Techniques and Applications** at the University of Information Technology (UIT - VNU-HCM).
