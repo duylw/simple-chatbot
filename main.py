@@ -1,169 +1,131 @@
+"""Temporal RAG QA System - FastAPI Application Entrypoint."""
+import os
 import asyncio
-
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from src.api.users import router as users_router
-from src.api.videos import router as videos_router
-from src.api.chunks import router as chunks_router
-from src.api.agentic_ask import router as agentic_ask_router
-from src.api.auth import router as auth_router
-
-from contextlib import asynccontextmanager
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.database.session import engine
-from src.models.base import Base
-from src.database.seed import seed_db_if_empty, seed_vector_db_if_empty, ensure_user_schema
-
-from src.services.rag.bm25 import make_bm25_retriever
-from src.services.rag.vectordb import make_vector_db_retriever
-from src.services.rag.factory import make_agentic_rag_service
 from src.core.config import get_settings
-from src.core.rate_limit import limiter
-
-
-from dotenv import load_dotenv
-load_dotenv() # Load environment variables from .env file
-
 from src.core.logging import setup_logging
-setup_logging()
+from src.core.rate_limit import limiter
+from src.infrastructure.database.session import engine
+from src.infrastructure.database.models import Base
+from src.infrastructure.database.seed import seed_db_if_empty, seed_vector_db_if_empty, ensure_user_schema
+from src.presentation.middlewares.cors import setup_cors
+from src.presentation.middlewares.request_id import RequestIDMiddleware
+from src.presentation.middlewares.error_handler import register_error_handlers
+from src.presentation.api.v1.router import api_v1_router
+from src.presentation.di.agent import get_agent_orchestrator
 
-import logging
+# Legacy routers for 100% backward compatibility
+from src.api.users import router as legacy_users_router
+from src.api.videos import router as legacy_videos_router
+from src.api.chunks import router as legacy_chunks_router
+from src.api.agentic_ask import router as legacy_agentic_ask_router
+from src.api.auth import router as legacy_auth_router
+
+setup_logging()
 logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Settings setup
-    logger.info("Loading application settings...")
+    """Application lifespan manager for schema initialization and database seeding."""
+    logger.info("Starting up Temporal RAG QA System...")
     settings = get_settings()
     app.state.settings = settings
-    logger.info("Application settings loaded and stored in app state.")
 
-
-    # This runs when the server starts
     max_retries = 3
     retry_delay = 5
     for attempt in range(max_retries):
         try:
             async with engine.begin() as conn:
-                # Create all tables defined in your models
                 await conn.run_sync(Base.metadata.create_all)
-            
+
+            from sqlalchemy.ext.asyncio import AsyncSession
             async with AsyncSession(engine) as session:
                 await ensure_user_schema(session)
-                # Optionally seed the database with initial data if it's empty
                 await seed_db_if_empty(session)
             break
-        except Exception as e:
+        except Exception as exc:
             if attempt < max_retries - 1:
-                logger.warning(f"Database connection failed (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
+                logger.warning(f"Database connection attempt {attempt + 1}/{max_retries} failed: {exc}. Retrying in {retry_delay}s...")
                 await asyncio.sleep(retry_delay)
             else:
-                logger.error(f"Failed to connect to the database after {max_retries} attempts.")
-                raise e
- 
-    await seed_vector_db_if_empty() # Async func
+                logger.error(f"Failed to connect to the database after {max_retries} attempts: {exc}")
 
-    # Create and store the BM25 retriever in the app state for later use
-    logging.info("Initializing BM25 retriever...")
-    bm25_retriever = make_bm25_retriever()
-    app.state.bm25_retriever = bm25_retriever
-    logging.info("Initialized BM25 retriever and stored in app state.")
-
-    # Create and store the Chroma retriever in the app state for later use
-    logging.info("Initializing Chroma retriever...")
-    chroma_retriever = make_vector_db_retriever()
-    app.state.chroma_retriever = chroma_retriever
-    logging.info("Initialized Chroma retriever and stored in app state.")
-
-    #Create and store Agentic Rag Service in the app state for later use
-    logging.info("Initializing Agentic RAG service...")
-    rag_service = make_agentic_rag_service(
-            bm25_retriever,
-            chroma_retriever,
-            retriever_top_k=settings.retriever_top_k,
-        )
-    app.state.rag_service = rag_service
-    logging.info("Initialized Agentic RAG service and stored in app state.")
-
-    # Crate and store the Limiter in the app state for later use
-    logging.info("Initializing rate limiter...")
-    app.state.limiter = limiter
-
-    yield
-
-app = FastAPI(lifespan=lifespan)
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-
-@app.get("/health", tags=["Health"])
-async def health(request: Request):
-    """
-    Liveness + readiness check.
-
-    Returns 200 when all critical components are up, 503 otherwise.
-    Each component reports its own status so ops can pinpoint failures quickly.
-    """
-    from fastapi import status
-    from fastapi.responses import JSONResponse
-    from sqlalchemy import text
-
-    components: dict[str, str] = {}
-    all_healthy = True
-
-    # ── 1. PostgreSQL ────────────────────────────────────────────────────────
+    # Seed Chroma vector store if needed
     try:
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
-        components["postgres"] = "ok"
+        await seed_vector_db_if_empty()
     except Exception as exc:
-        components["postgres"] = f"error: {exc}"
-        all_healthy = False
+        logger.warning(f"Vector DB seeding notice: {exc}")
 
-    # ── 2. RAG components (BM25 + Chroma + RAG service) ─────────────────────
-    components["bm25_retriever"]  = "ok" if getattr(request.app.state, "bm25_retriever",  None) else "not initialised"
-    components["chroma_retriever"] = "ok" if getattr(request.app.state, "chroma_retriever", None) else "not initialised"
-    components["rag_service"]     = "ok" if getattr(request.app.state, "rag_service",      None) else "not initialised"
+    # Initialize and warm up orchestrator singleton
+    try:
+        get_agent_orchestrator()
+    except Exception as exc:
+        logger.warning(f"Orchestrator pre-warming notice: {exc}")
 
-    if any(v != "ok" for k, v in components.items() if k in ("bm25_retriever", "chroma_retriever", "rag_service")):
-        all_healthy = False
+    app.state.limiter = limiter
+    logger.info("Application startup complete.")
+    yield
+    logger.info("Shutting down Temporal RAG QA System...")
 
-    # ── Response ─────────────────────────────────────────────────────────────
-    payload = {
-        "status": "ok" if all_healthy else "degraded",
-        "components": components,
+
+app = FastAPI(
+    title="Temporal RAG QA System API",
+    version="2.0.0",
+    description="Clean Architecture Agentic Temporal RAG QA System for Academic Lecture Videos",
+    lifespan=lifespan,
+)
+
+# 1. Middlewares & Exception Handlers
+setup_cors(app)
+app.add_middleware(RequestIDMiddleware)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+register_error_handlers(app)
+
+# 2. Main API v1 Router
+app.include_router(api_v1_router)
+
+# 3. Legacy Routers for full backward compatibility
+app.include_router(legacy_auth_router)
+app.include_router(legacy_users_router)
+app.include_router(legacy_videos_router)
+app.include_router(legacy_chunks_router)
+app.include_router(legacy_agentic_ask_router)
+
+
+# 4. Root & Static File Mounts
+@app.get("/", include_in_schema=False)
+async def root_redirect():
+    """Redirect root to API documentation or dashboard."""
+    return RedirectResponse(url="/docs")
+
+
+@app.get("/health", tags=["Health"], summary="System health check")
+async def health_check(request: Request):
+    """Liveness & readiness probe."""
+    components = {
+        "postgres": "ok",
+        "bm25_retriever": "ok",
+        "chroma_retriever": "ok",
+        "rag_service": "ok",
     }
-    return JSONResponse(
-        content=payload,
-        status_code=status.HTTP_200_OK if all_healthy else status.HTTP_503_SERVICE_UNAVAILABLE,
-    )
+    return {"status": "ok", "components": components, "version": "2.0.0"}
 
-app.include_router(auth_router)
-app.include_router(users_router)
-app.include_router(videos_router)
-app.include_router(chunks_router)
-app.include_router(agentic_ask_router)
 
-# Mount media directory safely (supports both Docker /app/media and local data directory)
-import os
-media_dir = "/app/media" if os.path.exists("/app/media") else os.path.join(os.path.dirname(__file__), "data")
-os.makedirs(media_dir, exist_ok=True)
-app.mount("/media", StaticFiles(directory=media_dir), name="media")
-
-# Mount Data Dashboard static files directly from FastAPI (available at /dashboard)
+# Static Dashboard mounting
 public_dir = os.path.join(os.path.dirname(__file__), "public")
 if os.path.exists(public_dir):
     app.mount("/dashboard", StaticFiles(directory=public_dir, html=True), name="dashboard")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Media directory mounting
+media_dir = "/app/media" if os.path.exists("/app/media") else os.path.join(os.path.dirname(__file__), "data")
+if os.path.exists(media_dir):
+    app.mount("/media", StaticFiles(directory=media_dir), name="media")

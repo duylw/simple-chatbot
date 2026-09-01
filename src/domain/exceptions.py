@@ -9,12 +9,20 @@ class DomainError(Exception):
         super().__init__(self.message)
 
 
+DomainException = DomainError
+
+
 class EntityNotFoundError(DomainError):
     """Raised when an entity is not found in repositories."""
-    def __init__(self, entity_name: str, entity_id: str | int):
-        self.entity_name = entity_name
-        self.entity_id = entity_id
-        super().__init__(f"{entity_name} with identifier '{entity_id}' not found.")
+    def __init__(self, entity_name_or_message: str, entity_id: str | int | None = None):
+        if entity_id is not None:
+            self.entity_name = entity_name_or_message
+            self.entity_id = entity_id
+            super().__init__(f"{entity_name_or_message} with identifier '{entity_id}' not found.")
+        else:
+            self.entity_name = "Entity"
+            self.entity_id = ""
+            super().__init__(entity_name_or_message)
 
 
 class EntityAlreadyExistsError(DomainError):
