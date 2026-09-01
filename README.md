@@ -108,48 +108,46 @@ The online inference system is architected as an asynchronous, decoupled microse
 
 ## 5. Technology Stack
 
-| Layer / Component | Technologies | Purpose |
-| :--- | :--- | :--- |
-| **API & Backend Framework** | FastAPI, Uvicorn, Pydantic v2 | High-throughput asynchronous REST API services |
-| **Database & ORM** | PostgreSQL 16, SQLAlchemy 2.0 (Async), Alembic | Relational data persistence, user management, chunk catalog |
-| **Agent & Graph Orchestration** | LangGraph, LangChain, Rank-BM25 | State-machine based Self-RAG and hybrid search orchestration |
-| **Vector Storage** | ChromaDB | High-performance embedding index for dense similarity search |
-| **LLM & Embeddings** | Google Gemini 3.5, Gemma 4, Groq LPU, OpenRouter | Text generation, query rewriting, guardrails, self-grading |
-| **Frontend Client** | Gradio 6, HTML5 Video Player | Interactive web dashboard with dynamic video timestamp seeking |
-| **Observability & Tracing** | Langfuse OpenTelemetry | Latency tracking, token consumption monitoring, LLM tracing |
-| **Security & Protection** | PyJWT, Passlib (bcrypt), SlowAPI | Authentication, password hashing, and API DDoS rate limiting |
-| **Testing & CI/CD** | Pytest, Pytest-Asyncio, Pytest-Cov, GitHub Actions | Automated unit/integration test execution and coverage reports |
-| **Containerization** | Docker, Docker Compose, Astral UV | Production-ready multi-service container orchestration |
+| Layer / Component               | Technologies                                       | Purpose                                                        |
+| :--------------------------------| :---------------------------------------------------| :---------------------------------------------------------------|
+| **API & Backend Framework**     | FastAPI, Uvicorn, Pydantic v2                      | High-throughput asynchronous REST API services                 |
+| **Database & ORM**              | PostgreSQL 16, SQLAlchemy 2.0 (Async), Alembic     | Relational data persistence, user management, chunk catalog    |
+| **Agent & Graph Orchestration** | LangGraph, LangChain, Rank-BM25                    | State-machine based Self-RAG and hybrid search orchestration   |
+| **Vector Storage**              | ChromaDB                                           | High-performance embedding index for dense similarity search   |
+| **LLM & Embeddings**            | Google Gemini 3.5, Gemma 4, Groq LPU, OpenRouter   | Text generation, query rewriting, guardrails, self-grading     |
+| **Frontend Client**             | Gradio 6, HTML5 Video Player                       | Interactive web dashboard with dynamic video timestamp seeking |
+| **Observability & Tracing**     | Langfuse OpenTelemetry                             | Latency tracking, token consumption monitoring, LLM tracing    |
+| **Security & Protection**       | PyJWT, Passlib (bcrypt), SlowAPI                   | Authentication, password hashing, and API DDoS rate limiting   |
+| **Testing & CI/CD**             | Pytest, Pytest-Asyncio, Pytest-Cov, GitHub Actions | Automated unit/integration test execution and coverage reports |
+| **Containerization**            | Docker, Docker Compose, Astral UV                  | Production-ready multi-service container orchestration         |
 
 ---
 
 ## 6. Project Directory Structure
 
-```
+```text
 temporal-rag-qa-system/
 ├── .github/
 │   └── workflows/
 │       └── ci.yaml             # Automated GitHub Actions CI pipeline
 ├── data/                       # Lecture transcripts, metadata, and knowledge base
-├── public/                     # Static assets and monitoring dashboard
+├── public/                     # Static Web Dashboard (/dashboard)
+│   └── index.html
+├── gradio_app.py               # Standalone Gradio client entrypoint
+├── main.py                     # FastAPI production server entrypoint
 ├── src/
-│   ├── api/                    # REST route controllers (auth, users, videos, chunks, agentic_ask)
 │   ├── core/                   # Security, JWT tokens, config schemas, rate limiter, logging
-│   ├── database/               # Async SQLAlchemy session management, migrations, seed script
-│   ├── gradio_ui/              # Standalone Gradio frontend (components, handlers, video utils)
-│   ├── models/                 # SQLAlchemy ORM models (User, Video, Chunk)
-│   ├── repositories/           # Data Access Layer (CRUD abstractions)
-│   ├── schemas/                # Pydantic schemas for request/response validation
-│   └── services/
-│       ├── rag/                # LangGraph state machine, nodes, tools, prompts, llm_factory
-│       └── user.py, video.py   # Domain services
+│   ├── domain/                 # Domain Entities, Ports interfaces & Exceptions
+│   ├── application/            # Agent Orchestrator, ContextManager, Use Cases & DTOs
+│   ├── infrastructure/         # Postgres Repositories, ChromaDB, BM25, Multi-LLM Gateway
+│   ├── presentation/           # REST API v1 routes (/api/v1/*), Middlewares, DI container
+│   └── gradio_ui/              # Standalone Gradio Client (components, handlers, video utils)
 ├── tests/
 │   ├── conftest.py             # Global test fixtures and deterministic mock environments
-│   ├── unit/                   # Unit tests (temporal utils, llm factory, rag nodes, auth)
-│   └── integration/            # Integration tests (FastAPI endpoints, Gradio client)
-├── compose.yaml                # Multi-container Docker Compose production definition
-├── Dockerfile                  # Backend container build specification
-├── Dockerfile.gradio           # Lightweight Gradio frontend container build specification
+│   ├── unit/                   # Unit tests (domain, application, infrastructure)
+│   └── integration/            # Integration tests (FastAPI v1 endpoints, Gradio client)
+├── compose.yaml                # Multi-container Docker Compose (Backend, DB, Chroma, Adminer)
+├── Dockerfile                  # Multi-stage production container build specification
 ├── pyproject.toml              # Project dependencies and tool configurations (Astral UV)
 └── README.md
 ```
@@ -197,17 +195,28 @@ CHROMA_PORT=8000
 EMBEDDING_MODEL=gemini-embedding-2-preview
 ```
 
-### 8.3 Launch via Docker Compose
-Deploy all services in detached mode with a single command:
+### 8.3 Launch Backend Services via Docker Compose
+Deploy Backend API, PostgreSQL, ChromaDB, and Adminer in detached mode:
 ```bash
 docker compose up -d --build
 ```
 
-Once started, access the respective services:
-- **Gradio Web Interface**: `http://localhost:7860`
+Once started, access the backend services:
+- **Web Dashboard**: `http://localhost:8000/dashboard`
 - **FastAPI Interactive Docs (Swagger)**: `http://localhost:8000/docs`
 - **ChromaDB Vector Store API**: `http://localhost:8008`
 - **PostgreSQL Adminer Dashboard**: `http://localhost:8081`
+
+### 8.4 Launch Standalone Gradio Client (Optional)
+To run the Gradio interface locally connecting to the Docker Backend:
+```bash
+# 1. Sync dependencies including Gradio UI group
+uv sync --all-groups
+
+# 2. Start Gradio client
+uv run --group gradio python gradio_app.py
+```
+Access Gradio at `http://localhost:7860`.
 
 ---
 
@@ -219,14 +228,16 @@ Continuous integration is managed automatically via **GitHub Actions**. Real-tim
 
 Execute the Pytest test suite with code coverage analysis locally:
 ```bash
-uv run pytest tests/ -v --cov=src --cov-report=term-missing
+uv run pytest --cov=src --cov-report=term-missing
 ```
 
 ### Test Suite Execution Output:
 ```text
-======================= 32 passed in 15.02s ========================
-- Unit Tests: 100% PASSED (Temporal algorithms, LLM multi-provider factory, LangGraph nodes, Auth)
-- Integration Tests: 100% PASSED (FastAPI REST endpoints, Gradio client)
+======================= 59 passed in 19.19s ========================
+- Domain Unit Tests: 100% PASSED (Entities, Invariants, Exceptions)
+- Infrastructure Tests: 100% PASSED (LLM Gateway, Repositories, Database)
+- Application Tests: 100% PASSED (Agent Orchestrator, ContextManager Stitching, Use Cases)
+- Integration Tests: 100% PASSED (REST API v1 Endpoints, Gradio Client)
 ```
 
 ---

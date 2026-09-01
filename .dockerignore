@@ -1,41 +1,46 @@
-# Include any files or directories that you don't want to be copied to your
-# container here (e.g., local build artifacts, temporary files, etc.).
-#
-# For more help, visit the .dockerignore file reference guide at
-# https://docs.docker.com/go/build-context-dockerignore/
+# Python artifacts and virtual environments
+**/.venv/
+**/venv/
+**/env/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.coverage
+**/htmlcov/
+**/.mypy_cache/
+**/.ruff_cache/
 
+# Git & IDE configs
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
 **/.DS_Store
-**/__pycache__
-**/.venv
-**/.classpath
-**/.dockerignore
-**/.env
-**/.git
-**/.gitignore
-**/.project
-**/.settings
-**/.toolstarget
-**/.vs
-**/.vscode
-**/*.*proj.user
-**/*.dbmdl
-**/*.jfm
-**/bin
-**/charts
-**/docker-compose*
-**/compose.y*ml
-**/Dockerfile*
-**/node_modules
-**/npm-debug.log
-**/obj
-**/secrets.dev.yaml
-**/values.dev.yaml
-LICENSE
-README.md
 
-test/
+# Documentation & AI Agent Planning artifacts
+plans/
+AGENTS.md
+TRACKER.md
+
+# Testing
+tests/
+
+# Docker build configs
+Dockerfile*
+compose*.yaml
+docker-compose*.yaml
+.dockerignore
+
+# Sensitive environment files
+.env
+.env.*
+!.env.example
+
+# Large local assets (mounted via volumes)
 data/videos/
 videos/
 notebooks/
-# Local HuggingFace model cache — mounted as a volume at runtime
 models/
