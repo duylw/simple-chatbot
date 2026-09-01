@@ -2,8 +2,7 @@ import pytest
 import jwt
 from pydantic import ValidationError
 from src.core.security import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
-from src.schemas.agentic_ask import AskRequest, AgenticAskResponse
-from langchain_core.documents import Document
+from src.application.dtos.agent import QueryRequestDTO, AgentResponseDTO, SourceCitationDTO
 
 
 def test_password_hashing():
@@ -28,26 +27,31 @@ def test_jwt_token_flow():
 
 
 def test_ask_request_validation():
-    """Verify AskRequest validates question length and optional model."""
+    """Verify QueryRequestDTO validates question length and optional model."""
     # Valid
-    req = AskRequest(question="Giải thích Self-Attention", model="groq/llama-3.3-70b-versatile")
+    req = QueryRequestDTO(question="Giải thích Self-Attention", model="groq/llama-3.3-70b-versatile")
     assert req.question == "Giải thích Self-Attention"
     assert req.model == "groq/llama-3.3-70b-versatile"
 
     # Empty question raises validation error (min_length=1)
     with pytest.raises(ValidationError):
-        AskRequest(question="")
+        QueryRequestDTO(question="")
 
 
 def test_agentic_ask_response_validation():
-    """Verify AgenticAskResponse enforces string type for rewritten_query and answer."""
-    doc = Document(page_content="Content", metadata={"video_name": "v1.mp4", "timestamp": 0})
-    resp = AgenticAskResponse(
+    """Verify AgentResponseDTO enforces types for rewritten_query, answer, and sources."""
+    source_dto = SourceCitationDTO(
+        video_name="v1.mp4",
+        timestamp=0.0,
+        time_range="00:00 - 00:20",
+        content="Content",
+    )
+    resp = AgentResponseDTO(
         query="Self-Attention",
         rewritten_query="Cơ chế Self-Attention",
         answer="Giải thích chi tiết...",
-        sources=[doc],
-        n_iterations=0,
+        sources=[source_dto],
+        n_iterations=1,
         n_llm_calls=1,
         execution_time=1.25,
         guardrail_result="Hợp lệ",

@@ -1,13 +1,13 @@
 import pytest
 from langchain_core.documents import Document
 from langchain_core.messages import ToolMessage
-from src.services.rag.nodes.utils import (
-    format_timestamp,
-    merge_temporal_chunks,
-    format_context,
-    extract_text_content,
-    extract_sources_from_tool_messages,
-)
+from src.application.agent.context_manager import ContextManager
+
+format_timestamp = ContextManager.format_timestamp
+merge_temporal_chunks = ContextManager.merge_temporal_chunks
+format_context = ContextManager.format_context
+extract_text_content = ContextManager.extract_text_content
+extract_sources_from_tool_messages = ContextManager.extract_sources_from_tool_messages
 
 
 def test_format_timestamp():

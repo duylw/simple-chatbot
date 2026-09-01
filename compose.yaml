@@ -50,40 +50,6 @@ services:
       retries: 3
       start_period: 60s
 
-  gradio:
-    build:
-      context: .
-      dockerfile: Dockerfile.gradio
-    restart: always
-    ports:
-      - "7860:7860"
-    environment:
-      API_BASE_URL: http://backend:8000
-      PUBLIC_API_BASE_URL: http://localhost:8000
-      GRADIO_SERVER_PORT: "7860"
-      GRADIO_SERVER_NAME: "0.0.0.0"
-    env_file:
-      - .env
-    depends_on:
-      - backend
-    develop:
-      watch:
-        # Sync Gradio UI components instantly without rebuilding
-        - action: sync
-          path: ./src/gradio_ui
-          target: /app/src/gradio_ui
-
-        - action: sync
-          path: ./gradio_app.py
-          target: /app/gradio_app.py
-
-        # Rebuild only if dependencies change
-        - action: rebuild
-          path: ./pyproject.toml
-
-        - action: rebuild
-          path: ./uv.lock
-
   db:
     image: postgres:16-alpine
     restart: always

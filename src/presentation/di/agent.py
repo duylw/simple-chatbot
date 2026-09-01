@@ -2,11 +2,11 @@
 from fastapi import Depends
 
 from src.application.agent.orchestrator import AgentOrchestrator
+from src.application.agent.state import GraphConfig
 from src.application.use_cases.ask_question import AskQuestionUseCase
 from src.application.use_cases.stream_question import StreamQuestionUseCase
 from src.infrastructure.vectorstore.chroma_adapter import make_vector_db_retriever
 from src.infrastructure.search.bm25_adapter import make_bm25_retriever
-from src.services.rag.config import GraphConfig
 
 # Global cached orchestrator instance
 _orchestrator_instance = None

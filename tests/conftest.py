@@ -20,7 +20,7 @@ os.environ["SECRET_KEY"] = "test-secret-key-for-jwt-signing-12345"
 os.environ["ENVIRONMENT"] = "development"
 
 from langchain_core.documents import Document
-from src.services.rag.state import AnswerGrade, GuardrailEvaluation
+from src.domain.entities.agent import AnswerGrade, GuardrailEvaluation
 
 
 @pytest.fixture(autouse=True)

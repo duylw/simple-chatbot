@@ -18,6 +18,18 @@ class Context:
     n_iterations: int = 3
 
 
+@dataclass
+class GraphConfig:
+    """Configuration parameters for compiling and executing the Agent workflow."""
+    llm_model: str = "gemini-3.5-flash-lite"
+    temperature: float = 0.0
+    retriever_top_k: int = 10
+    n_iterations: int = 2
+    use_hybrid: bool = True
+    semantic_weight: float = 1.0
+    bm25_weight: float = 1.0
+
+
 class ThreadState(TypedDict):
     """LangGraph execution thread state."""
     messages: Annotated[list[AnyMessage], operator.add]

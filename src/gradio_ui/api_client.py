@@ -37,12 +37,15 @@ class BackendClient:
         if not email.strip() or not password:
             return LoginResult(False, "Email and password are required.")
 
-        url = f"{self.base_url}/auth/login/token"
         payload = {"username": email.strip(), "password": password}
 
         try:
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-                response = await client.post(url, data=payload)
+                # Try API v1 first
+                response = await client.post(f"{self.base_url}/api/v1/auth/token", data=payload)
+                if response.status_code == 404:
+                    # Fallback to legacy route
+                    response = await client.post(f"{self.base_url}/auth/login/token", data=payload)
         except httpx.HTTPError as error:
             return LoginResult(False, f"Login request failed: {error}")
 
@@ -63,13 +66,14 @@ class BackendClient:
         if not question.strip():
             return AskResult(False, "Please enter a question.")
 
-        url = f"{self.base_url}/agentic_ask/"
         headers = {"Authorization": f"Bearer {token}"}
         payload = {"question": question.strip(), "model": model}
 
         try:
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-                response = await client.post(url, json=payload, headers=headers)
+                response = await client.post(f"{self.base_url}/api/v1/agent/ask", json=payload, headers=headers)
+                if response.status_code == 404:
+                    response = await client.post(f"{self.base_url}/agentic_ask/", json=payload, headers=headers)
         except httpx.HTTPError as error:
             return AskResult(False, f"Question request failed: {error}")
 
@@ -88,6 +92,17 @@ class BackendClient:
             rate_limit_reset=response.headers.get("X-RateLimit-Reset"),
             retry_after=response.headers.get("Retry-After"),
         )
+
+    async def get_models(self) -> list[dict[str, str]]:
+        """Fetch supported models from API v1."""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(f"{self.base_url}/api/v1/agent/models")
+                if response.status_code == 200:
+                    return response.json()
+        except Exception:
+            pass
+        return []
 
 
 def _to_int(value: str | None) -> int | None:

@@ -17,25 +17,45 @@ def empty_sources_dataframe() -> pd.DataFrame:
     return pd.DataFrame(columns=SOURCE_COLUMNS)
 
 
-def format_sources_dataframe(sources: list[dict] | None) -> pd.DataFrame:
+def format_sources_dataframe(sources: list[Any] | None) -> pd.DataFrame:
     if not sources:
         return empty_sources_dataframe()
 
     rows: list[list[str]] = []
     for doc in sources:
         if isinstance(doc, dict):
+            # API v1 DTO schema direct fields
+            video_name = doc.get("video_name")
+            time_range = doc.get("time_range")
+            video_url = doc.get("video_url")
             metadata = doc.get("metadata", {})
+            if not video_name:
+                video_name = metadata.get("video_name") or metadata.get("source") or "Video Bài Giảng"
+            if not time_range:
+                time_range = metadata.get("time_range")
+            if not video_url:
+                video_url = metadata.get("video_url")
+        elif hasattr(doc, "video_name"):
+            # DTO object
+            video_name = getattr(doc, "video_name", "Video Bài Giảng")
+            time_range = getattr(doc, "time_range", "")
+            video_url = getattr(doc, "video_url", None)
+            metadata = {}
         elif hasattr(doc, "metadata"):
+            # Langchain Document
             metadata = doc.metadata or {}
+            video_name = metadata.get("video_name") or metadata.get("source") or "Video Bài Giảng"
+            time_range = metadata.get("time_range")
+            video_url = metadata.get("video_url")
         else:
+            video_name = "Video Bài Giảng"
+            time_range = ""
+            video_url = None
             metadata = {}
 
-        video_name = metadata.get("video_name") or metadata.get("source") or "Video Bài Giảng"
         filename = video_name if video_name.endswith(".mp4") else f"{video_name}.mp4"
         filename = unicodedata.normalize("NFC", filename)
 
-        # Get or format time range string (e.g. 02:15 - 03:00)
-        time_range = metadata.get("time_range")
         if not time_range:
             start_t = int(metadata.get("start_time", metadata.get("timestamp", 0)) or 0)
             dur = int(metadata.get("duration", 0) or 0)
@@ -44,7 +64,9 @@ def format_sources_dataframe(sources: list[dict] | None) -> pd.DataFrame:
             else:
                 time_range = f"{start_t // 60:02d}:{start_t % 60:02d}"
 
-        video_url = f"{PUBLIC_API_BASE_URL}/media/videos/{filename}"
+        if not video_url:
+            video_url = f"{PUBLIC_API_BASE_URL}/media/videos/{filename}"
+
         rows.append([video_name, time_range, video_url])
 
     return pd.DataFrame(rows, columns=SOURCE_COLUMNS)

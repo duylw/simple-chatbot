@@ -2,13 +2,15 @@ import os
 from unittest.mock import patch, MagicMock
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-from src.services.rag.llm_factory import (
+from src.infrastructure.llm.gateway import (
     get_chat_model,
     get_structured_chat_model,
+)
+from src.infrastructure.llm.providers import (
     SUPPORTED_MODEL_CHOICES,
     DEFAULT_MODEL,
 )
-from src.services.rag.state import GuardrailEvaluation
+from src.domain.entities.agent import GuardrailEvaluation
 
 
 def test_supported_model_choices():

@@ -11,13 +11,12 @@ from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import tools_condition, ToolNode
 
-from src.application.agent.state import ThreadState, Context
+from src.application.agent.state import ThreadState, Context, GraphConfig
 from src.application.agent.tools import create_retriever_tool
 from src.application.agent.context_manager import ContextManager
 from src.infrastructure.observability.tracer import get_tracer_callback
 from src.infrastructure.observability.tracer import trace_agent_execution
 from src.core.config import get_settings
-from src.services.rag.config import GraphConfig
 
 from .nodes import (
     continue_after_guardrail,

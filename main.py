@@ -22,13 +22,6 @@ from src.presentation.middlewares.error_handler import register_error_handlers
 from src.presentation.api.v1.router import api_v1_router
 from src.presentation.di.agent import get_agent_orchestrator
 
-# Legacy routers for 100% backward compatibility
-from src.api.users import router as legacy_users_router
-from src.api.videos import router as legacy_videos_router
-from src.api.chunks import router as legacy_chunks_router
-from src.api.agentic_ask import router as legacy_agentic_ask_router
-from src.api.auth import router as legacy_auth_router
-
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -93,15 +86,8 @@ register_error_handlers(app)
 # 2. Main API v1 Router
 app.include_router(api_v1_router)
 
-# 3. Legacy Routers for full backward compatibility
-app.include_router(legacy_auth_router)
-app.include_router(legacy_users_router)
-app.include_router(legacy_videos_router)
-app.include_router(legacy_chunks_router)
-app.include_router(legacy_agentic_ask_router)
 
-
-# 4. Root & Static File Mounts
+# 3. Root & Static File Mounts
 @app.get("/", include_in_schema=False)
 async def root_redirect():
     """Redirect root to API documentation or dashboard."""
